@@ -1,6 +1,19 @@
 {% extends 'blog/base.html' %}
 {% load static blog_extras %}
-{% comment %}文章发布 / 编辑页：左侧正文编辑器 + 右侧发布设置{% endcomment %}
+{% comment %}
+文章发布 / 编辑页。
+
+排版说明（改这块前先读一下，之前在这里反复踩坑）：
+  * 正文编辑器做成**全宽**（.editor-main），不再和设置栏并排。
+    并排时左栏天然比右栏矮一截，怎么调都会留出一块空白。
+  * 设置项（发布设置 / 摘要 / 封面图 / Markdown 速查）放在正文**下方**，
+    用 .settings-grid 横向铺开，窄屏自动折行。
+  * 最右侧那一条是 base.html 里 .wrap 栅格自带的侧边栏（站长卡片 /
+    站点数据 / 热门文章 / 标签），全站统一。这里有两件事千万不要做：
+      1) 再 include 一次 sidebar.html（会重复渲染两份）
+      2) 用空的 sidebar block 把它清空（右侧会整条变白）
+    这两件都干过，所以特意写在这里。
+{% endcomment %}
 
 {% block title %}{{ action }}文章 - 我的博客{% endblock %}
 
@@ -36,46 +49,33 @@
         </div>
     {% endif %}
 
-    <div class="editor-layout">
-        <div class="editor-main">
-            <div class="card editor-card">
-                <div class="card-body editor-card-body">
-                    <div class="form-group">
-                        <label class="form-label" for="{{ form.title.id_for_label }}">标题</label>
-                        {{ form.title }}
-                        {% if form.title.errors %}
-                            <ul class="form-error">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>
-                        {% endif %}
-                    </div>
-
-                    <div class="form-group editor-grow mb-0">
-                        <label class="form-label" for="{{ form.content.id_for_label }}">
-                            正文 <span class="text-xs text-3">（Markdown）</span>
-                        </label>
-                        {{ form.content }}
-                        {% if form.content.errors %}
-                            <ul class="form-error">{% for e in form.content.errors %}<li>{{ e }}</li>{% endfor %}</ul>
-                        {% endif %}
-                        <span class="form-hint" id="content-count">0 字</span>
-                    </div>
+    <div class="editor-main">
+        {# ---- 正文区：全宽 ---- #}
+        <div class="card">
+            <div class="card-body editor-card-body">
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.title.id_for_label }}">标题</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                        <ul class="form-error">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                    {% endif %}
                 </div>
-            </div>
 
-            <div class="card">
-                <div class="card-head"><h3>👀 摘要</h3></div>
-                <div class="card-body">
-                    <div class="form-group mb-0">
-                        {{ form.excerpt }}
-                        <span class="form-hint">不填写时会自动从正文截取前 150 字作为列表页摘要。</span>
-                        {% if form.excerpt.errors %}
-                            <ul class="form-error">{% for e in form.excerpt.errors %}<li>{{ e }}</li>{% endfor %}</ul>
-                        {% endif %}
-                    </div>
+                <div class="form-group editor-grow mb-0">
+                    <label class="form-label" for="{{ form.content.id_for_label }}">
+                        正文 <span class="text-xs text-3">（Markdown）</span>
+                    </label>
+                    {{ form.content }}
+                    {% if form.content.errors %}
+                        <ul class="form-error">{% for e in form.content.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                    {% endif %}
+                    <span class="form-hint" id="content-count">0 字</span>
                 </div>
             </div>
         </div>
 
-        <div class="editor-side">
+        {# ---- 设置区：横向铺开 ---- #}
+        <div class="settings-grid">
             <div class="card">
                 <div class="card-head"><h3>⚙️ 发布设置</h3></div>
                 <div class="card-body">
@@ -99,6 +99,19 @@
                         <span class="form-hint">用逗号或空格分隔，最多 6 个。例如：Python, Django, 毕业设计</span>
                         {% if form.tags_input.errors %}
                             <ul class="form-error">{% for e in form.tags_input.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head"><h3>👀 摘要</h3></div>
+                <div class="card-body">
+                    <div class="form-group mb-0">
+                        {{ form.excerpt }}
+                        <span class="form-hint">不填写时会自动从正文截取前 150 字作为列表页摘要。</span>
+                        {% if form.excerpt.errors %}
+                            <ul class="form-error">{% for e in form.excerpt.errors %}<li>{{ e }}</li>{% endfor %}</ul>
                         {% endif %}
                     </div>
                 </div>
@@ -134,16 +147,19 @@
                     <div><kbd>Tab</kbd> 缩进 4 空格，直接粘贴 Markdown 也可以。</div>
                 </div>
             </div>
+        </div>
 
-            <button type="submit" class="btn btn-primary btn-lg btn-block">
+        {# ---- 提交 ---- #}
+        <div class="form-actions editor-actions">
+            <button type="submit" class="btn btn-primary btn-lg">
                 {% if is_edit %}💾 保存修改{% else %}🚀 发布文章{% endif %}
             </button>
+            <a href="{% if is_edit %}{% url 'post_detail' post.id %}{% else %}{% url 'index' %}{% endif %}"
+               class="btn btn-ghost btn-lg">取消</a>
         </div>
     </div>
 </form>
 {% endblock %}
-
-{% block sidebar %}{% endblock %}
 
 {% block extra_js %}
 <script>

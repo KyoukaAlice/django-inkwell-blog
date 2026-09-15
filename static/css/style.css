@@ -1009,66 +1009,51 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 .big-stat .v { font-size: 2rem; font-weight: 800; letter-spacing: -1px; background: linear-gradient(120deg, var(--brand), var(--accent)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .big-stat .k { font-size: .84rem; color: var(--text-3); margin-top: 3px; }
 
-/* ---------- 25. 编辑器页（文章发布 / 编辑） ---------- */
-/* 布局目标：左右两栏底部对齐，不要出现「右栏到底了、左栏还剩一大片空白」。
-   做法是让左栏的正文编辑器撑满可用高度，而不是硬塞内容。
-   原来用的是 align-items: start，两栏各自独立高度，左栏短一截就空出来了。 */
-.editor-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
-    gap: 18px;
-    /* stretch：让两栏等高，右栏卡片就不会只占一半 */
-    align-items: stretch;
-}
+/* ---------- 25. 编辑器页（文章发布 / 编辑） ----------
+   排布：正文编辑器全宽，设置项在下方横向铺开，最右侧由 base.html 的
+   .wrap 栅格提供全站统一的侧边栏。
+
+   历史教训（别再犯）：
+     * 之前把「设置栏」和编辑器并排成两列，左栏天然比右栏矮一截，
+       底部会留出一块空白；给设置栏加 align-self: start 又会让它在
+       横向也不拉伸，卡片右边空出一条。
+     * 全宽单列 + 下方栅格是更稳的做法，两个问题都不存在。
+*/
 .editor-main {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    min-width: 0;          /* 防止 grid 子项被内容撑破 */
-    min-height: 0;
+    min-width: 0;
 }
-/* 正文卡片吃掉剩余高度，摘要卡片保持自然高度跟在下面 */
-.editor-card { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
-.editor-card-body { flex: 1 1 auto; display: flex; flex-direction: column; gap: 18px; min-height: 0; }
-/* 标题那一组不参与拉伸 */
-.editor-card-body > .form-group:not(.editor-grow) { flex: 0 0 auto; }
-/* 正文那一组撑满，里面的 textarea 再撑满它 */
-.editor-grow { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.editor-card-body { display: flex; flex-direction: column; gap: 18px; }
+/* 正文那一组撑满，textarea 再撑满它 */
+.editor-grow { display: flex; flex-direction: column; }
 .editor-grow .markdown-editor {
-    flex: 1 1 auto;
-    /* 兜底高度：宁可保守一点，太高会让整页过长。
-       想要更高的编辑区可以直接拖动 textarea 下沿。 */
-    min-height: 320px;
+    /* 兜底高度，避免空表单时编辑区太矮；想要更高直接拖 textarea 下沿 */
+    min-height: 360px;
     resize: vertical;
 }
-/* 右栏：卡片撑满整列宽度，底部再分掉多余的空白。
-   注意不要给它加 align-self: start —— grid 里 align-self 同时管两个轴，
-   start 会让它不再横向拉伸、收缩成内容宽度，卡片右边就空出一条（踩过）。 */
-.editor-side {
-    display: flex;
-    flex-direction: column;
+
+/* 设置项网格：宽屏 2~3 列，窄屏自动折行 */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
     gap: 16px;
-    position: sticky;
-    top: calc(var(--header-h) + 22px);
+    align-items: start;
 }
-.editor-side > .card { flex: 0 0 auto; }
-/* Markdown 速查可以长一点，让它吃掉右栏剩余的空白 */
-.editor-side > .card:last-of-type { flex: 1 1 auto; }
+.settings-grid > .card { height: 100%; }
+
+.editor-actions { margin-top: 4px; }
 
 .markdown-editor { font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace; font-size: .9rem; line-height: 1.75; }
 .md-help { font-size: .82rem; color: var(--text-3); line-height: 1.8; }
 .md-help code { background: var(--code-bg); padding: 1px 6px; border-radius: var(--radius-xs); color: var(--accent-dark); font-size: .85em; }
 .md-help kbd { background: var(--surface-3); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; font-size: .8em; }
 
-/* 窄屏：回到单栏，正文框不要强撑一屏高（手机上会显得特别长） */
-@media (max-width: 1000px) {
-    .editor-layout { grid-template-columns: minmax(0, 1fr); }
-    .editor-side { position: static; }
-    .editor-side > .card:last-of-type { flex: 0 0 auto; }
-    .editor-grow .markdown-editor {
-        min-height: 240px;
-        height: auto;
-    }
+/* 窄屏：编辑区别太高（手机上会很累） */
+@media (max-width: 700px) {
+    .settings-grid { grid-template-columns: minmax(0, 1fr); }
+    .editor-grow .markdown-editor { min-height: 260px; }
 }
 
 /* ---------- 26. 页脚 ---------- */

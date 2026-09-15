@@ -1,6 +1,13 @@
-"""检查写文章页的模板结构与排版相关类是否齐全。
+"""检查写文章页的模板结构与排版，专门防已经踩过的几个坑。
 
     python check_editor_layout.py
+
+固化的回归项（每一个都是真实踩过的 bug）：
+  1. 不能清空 base.html 的 sidebar block —— 否则右侧整条是白的
+  2. 不能重复 include sidebar.html —— 否则侧边栏渲染两份
+  3. 正文编辑器全宽单列，不再和设置栏并排 —— 并排必留空白
+  4. 正文 textarea 要有 min-height 兜底
+  5. div 必须配对（改这块时很容易漏闭合标签）
 """
 import os
 import re
@@ -10,79 +17,77 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent
 TEMPLATE = BASE / 'blog' / 'templates' / 'blog' / 'post_form.html'
 CSS = BASE / 'static' / 'css' / 'style.css'
+SIDEBAR_PARTIAL = BASE / 'blog' / 'templates' / 'blog' / 'partials' / 'sidebar.html'
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'DjangoBlog.settings')
 sys.path.insert(0, str(BASE))
-import django                                     # noqa: E402
+import django                                      # noqa: E402
 
 django.setup()
 
-from django.template.loader import get_template    # noqa: E402
+from django.template.loader import get_template     # noqa: E402
 
 problems = []
+
+
+def check(label, ok, detail=''):
+    if ok:
+        print(f'  [OK]   {label}')
+    else:
+        problems.append(label + (f'：{detail}' if detail else ''))
+        print(f'  [FAIL] {label}{"：" + detail if detail else ""}')
+
 
 # ---------- 1. 模板能否编译 ----------
 try:
     get_template('blog/post_form.html')
-    print('  [OK]   模板编译通过（Django 标签语法正确）')
-except Exception as exc:                           # noqa: BLE001
-    problems.append(f'模板编译失败：{exc}')
-    print(f'  [FAIL] 模板编译失败：{exc}')
+    check('模板编译通过（Django 标签语法正确）', True)
+except Exception as exc:                            # noqa: BLE001
+    check('模板编译通过', False, str(exc))
+    print('\n模板都编译不了，后面的检查没意义，先修语法。')
+    sys.exit(1)
 
 html = TEMPLATE.read_text(encoding='utf-8')
 css = CSS.read_text(encoding='utf-8')
+content = html.split('{% block content %}')[1].split('{% endblock %}')[0]
 
 # ---------- 2. div 配对 ----------
-content = html.split('{% block content %}')[1].split('{% endblock %}')[0]
 opens = len(re.findall(r'<div\b', content))
 closes = len(re.findall(r'</div>', content))
-if opens == closes:
-    print(f'  [OK]   div 配对正确（{opens} 开 / {closes} 闭）')
-else:
-    problems.append(f'div 不配对：{opens} 开 vs {closes} 闭')
-    print(f'  [FAIL] div 不配对：{opens} 开 / {closes} 闭')
+check(f'div 配对（{opens} 开 / {closes} 闭）', opens == closes)
 
-# ---------- 3. 排版用的类名是否都在模板里 ----------
-NEEDED_CLASSES = ['editor-layout', 'editor-main', 'editor-card',
-                  'editor-card-body', 'editor-grow', 'editor-side']
-for cls in NEEDED_CLASSES:
-    if cls in content:
-        print(f'  [OK]   模板里有 .{cls}')
-    else:
-        problems.append(f'模板缺少 .{cls}')
-        print(f'  [FAIL] 模板缺少 .{cls}')
+# ---------- 3. 侧边栏坑（回归守卫）----------
+check('没有清空 base 的 sidebar block（清了右侧会整条空白）',
+      not re.search(r'\{%\s*block\s+sidebar\s*%\}\s*\{%\s*endblock\s*%\}', html))
 
-# ---------- 4. CSS 里是否定义了这些类 ----------
-for cls in NEEDED_CLASSES:
-    if re.search(r'\.' + cls + r'\b', css):
-        print(f'  [OK]   CSS 定义了 .{cls}')
-    else:
-        problems.append(f'CSS 缺少 .{cls} 的定义')
-        print(f'  [FAIL] CSS 缺少 .{cls} 的定义')
+sidebar_raises = len(re.findall(r"\{%\s*include\s+'blog/partials/sidebar.html'\s*%\}", html))
+check(f'没有重复 include 侧边栏（当前 {sidebar_raises} 次，应为 0）', sidebar_raises == 0)
 
-# ---------- 5. 关键布局属性的检查 ----------
-checks = [
-    ('editor-layout 用 stretch 让两栏等高',
-     re.search(r'\.editor-layout\s*\{[^}]*align-items:\s*stretch', css, re.S)),
-    ('正文 textarea 会撑满（flex: 1 1 auto）',
-     re.search(r'\.editor-grow\s+\.markdown-editor\s*\{[^}]*flex:\s*1 1 auto', css, re.S)),
-    ('正文 textarea 有 min-height 兜底',
-     re.search(r'\.editor-grow\s+\.markdown-editor\s*\{[^}]*min-height', css, re.S)),
-    # 这条是回归守卫：grid 的 align-self 同时影响横轴，给侧栏加 start 会让它
-    # 收缩成内容宽度，卡片右边空出一条。曾经这么写过，所以固化成检查项。
-    ('右栏没有 align-self: start（否则卡片右边会空一块）',
-     not re.search(r'\.editor-side\s*\{[^}]*align-self', css, re.S)),
-    ('右栏卡片宽度撑满（没有 width: fit-content 之类）',
-     not re.search(r'\.editor-side[^{]*\{[^}]*width:\s*(fit-content|max-content|min-content)', css, re.S)),
-    ('窄屏回退成单栏',
-     re.search(r'@media \(max-width: 1000px\)\s*\{[^}]*\.editor-layout', css, re.S)),
-]
-for label, matched in checks:
-    if matched:
-        print(f'  [OK]   {label}')
-    else:
-        problems.append(label)
-        print(f'  [FAIL] {label}')
+# ---------- 4. 结构：全宽单列 ----------
+check('正文区用 .editor-main 且不再有并排的设置栏',
+      'editor-main' in content and 'editor-side' not in content
+      and 'editor-layout' not in content)
+check('设置项用 .settings-grid 横向铺开', 'settings-grid' in content)
+
+# CSS 里不应该再留着已废弃的两栏规则
+for dead in ('.editor-layout', '.editor-side', '.editor-aside'):
+    check(f'CSS 里没有残留废弃规则 {dead}', dead not in css)
+
+# ---------- 5. 表单字段齐全 ----------
+# 注意：模板里写的是 {{ form.xxx }}，渲染后才有 name="xxx"，
+# 所以这里检查模板源码里的表单变量，而不是 HTML 属性。
+for field in ('title', 'content', 'excerpt', 'status', 'category',
+              'tags_input', 'cover'):
+    check(f'表单字段 {field} 有渲染', f'form.{field}' in html)
+
+# ---------- 6. 正文高度兜底 ----------
+check('正文 textarea 有 min-height 兜底',
+      re.search(r'\.editor-grow\s+\.markdown-editor\s*\{[^}]*min-height', css, re.S))
+check('窄屏有单独的高度回退',
+      re.search(r'@media\s*\(max-width:\s*700px\)', css))
+
+# ---------- 7. 侧边栏组件本身还在（否则 base 会渲染空 aside）----------
+check('partials/sidebar.html 仍然存在', SIDEBAR_PARTIAL.is_file())
 
 print()
 if problems:
