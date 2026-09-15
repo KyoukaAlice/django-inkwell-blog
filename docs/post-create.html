@@ -70,10 +70,18 @@
     </div>
     
         <a class="notif-item unread" href="post/1/index.html">
+            <span class="ico">⭐</span>
+            <span>
+                bob 收藏了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
+                <time>09-16 00:33</time>
+            </span>
+        </a>
+    
+        <a class="notif-item unread" href="post/1/index.html">
             <span class="ico">💬</span>
             <span>
                 bob 评论了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
-                <time>09-16 00:23</time>
+                <time>09-16 00:33</time>
             </span>
         </a>
     
@@ -81,15 +89,7 @@
             <span class="ico">👍</span>
             <span>
                 alice 点赞了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
-                <time>09-16 00:23</time>
-            </span>
-        </a>
-    
-        <a class="notif-item unread" href="post/1/index.html">
-            <span class="ico">⭐</span>
-            <span>
-                bob 收藏了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
-                <time>09-16 00:23</time>
+                <time>09-16 00:33</time>
             </span>
         </a>
     
@@ -165,7 +165,7 @@
                         
                         <hr>
                         <form method="post" action="logout">
-                            <input type="hidden" name="csrfmiddlewaretoken" value="iyXczLHg3odc1cKANTYM3DlkkNEAU1yZsBCk3ghcjwVztZetcmolB3UVKcybncgr">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="Ny8EQNVgAxg1AHUfhFzgr0YGFXJCP3cy6ruN3GfVX0Qm7e1SBV3sdGTIde0abUht">
                             <button type="submit" class="danger">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
                                 退出登录
@@ -203,7 +203,7 @@
 </div>
 
 <form method="post" enctype="multipart/form-data" id="post-form" class="post-form">
-    <input type="hidden" name="csrfmiddlewaretoken" value="iyXczLHg3odc1cKANTYM3DlkkNEAU1yZsBCk3ghcjwVztZetcmolB3UVKcybncgr">
+    <input type="hidden" name="csrfmiddlewaretoken" value="Ny8EQNVgAxg1AHUfhFzgr0YGFXJCP3cy6ruN3GfVX0Qm7e1SBV3sdGTIde0abUht">
 
     
 
@@ -276,9 +276,9 @@ print(&quot;hello&quot;)
 
   <option value="4">生活随笔</option>
 
-  <option value="1">技术笔记</option>
-
   <option value="2">项目实战</option>
+
+  <option value="1">技术笔记</option>
 
 </select>
                         

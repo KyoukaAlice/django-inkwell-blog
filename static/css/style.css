@@ -1036,19 +1036,20 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 .editor-grow { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
 .editor-grow .markdown-editor {
     flex: 1 1 auto;
-    min-height: 380px;     /* 兜底：不支持 dvh 的浏览器也有个像样的高度 */
-    min-height: calc(100vh - 200px);
-    min-height: calc(100dvh - 200px);
-    resize: vertical;      /* 还是允许手动拉高 */
+    /* 兜底高度：宁可保守一点，太高会让整页过长。
+       想要更高的编辑区可以直接拖动 textarea 下沿。 */
+    min-height: 320px;
+    resize: vertical;
 }
-/* 右栏：桌面端也用 flex 撑满，卡片之间均分多余的空白，避免底部留一大块空 */
+/* 右栏：卡片撑满整列宽度，底部再分掉多余的空白。
+   注意不要给它加 align-self: start —— grid 里 align-self 同时管两个轴，
+   start 会让它不再横向拉伸、收缩成内容宽度，卡片右边就空出一条（踩过）。 */
 .editor-side {
     display: flex;
     flex-direction: column;
     gap: 16px;
     position: sticky;
     top: calc(var(--header-h) + 22px);
-    align-self: start;
 }
 .editor-side > .card { flex: 0 0 auto; }
 /* Markdown 速查可以长一点，让它吃掉右栏剩余的空白 */

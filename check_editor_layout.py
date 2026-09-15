@@ -68,8 +68,12 @@ checks = [
      re.search(r'\.editor-grow\s+\.markdown-editor\s*\{[^}]*flex:\s*1 1 auto', css, re.S)),
     ('正文 textarea 有 min-height 兜底',
      re.search(r'\.editor-grow\s+\.markdown-editor\s*\{[^}]*min-height', css, re.S)),
-    ('右栏 sticky 但 align-self: start（不强行拉满）',
-     re.search(r'\.editor-side\s*\{[^}]*align-self:\s*start', css, re.S)),
+    # 这条是回归守卫：grid 的 align-self 同时影响横轴，给侧栏加 start 会让它
+    # 收缩成内容宽度，卡片右边空出一条。曾经这么写过，所以固化成检查项。
+    ('右栏没有 align-self: start（否则卡片右边会空一块）',
+     not re.search(r'\.editor-side\s*\{[^}]*align-self', css, re.S)),
+    ('右栏卡片宽度撑满（没有 width: fit-content 之类）',
+     not re.search(r'\.editor-side[^{]*\{[^}]*width:\s*(fit-content|max-content|min-content)', css, re.S)),
     ('窄屏回退成单栏',
      re.search(r'@media \(max-width: 1000px\)\s*\{[^}]*\.editor-layout', css, re.S)),
 ]
