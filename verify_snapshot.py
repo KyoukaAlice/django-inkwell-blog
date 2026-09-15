@@ -6,23 +6,24 @@
   * 关键页面是否都在
   * 静态资源是否被正确引用
 
-    python verify_snapshot.py [快照目录]      # 默认 _site
+    python verify_snapshot.py            # 校验仓库根目录（默认，快照就在这里）
+    python verify_snapshot.py docs       # 校验指定目录
 """
 import re
 import sys
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-SITE = Path(sys.argv[1] if len(sys.argv) > 1 else '_site').resolve()
+SITE = Path(sys.argv[1] if len(sys.argv) > 1 else '.').resolve()
 
 LINK_RE = re.compile(r'\b(?:href|src)=(?P<q>["\'])(?P<url>[^"\']+)(?P=q)')
 CSS_URL_RE = re.compile(r'url\((?P<q>["\']?)(?P<url>[^"\')]+)(?P=q)\)')
 
 REQUIRED_PAGES = [
-    'index.html', 'index-preview-list.html', 'about.html', 'tags.html',
+    'index.html', 'index-generated.html', 'about.html', 'tags.html',
     'login.html', 'register.html', 'search.html', 'profile.html',
     'notifications.html', 'post-create.html', 'profile-edit.html',
-    'u-alice.html', '404.html', 'post/1/index.html',
+    'u-alice.html', '404.html', 'post/1/index.html', '.nojekyll',
 ]
 
 ok_count = 0
@@ -37,16 +38,27 @@ def note(ok, message):
         problems.append(message)
 
 
+def is_snapshot_page(path: Path) -> bool:
+    """只校验快照生成的页面，排除项目自身的文件（模板、源码等）。"""
+    rel = path.relative_to(SITE)
+    if rel.parts and rel.parts[0] == '.git':
+        return False
+    skip_dirs = {'.venv', 'venv', '__pycache__', 'blog', 'DjangoBlog', 'staticfiles', '.git'}
+    if any(part in skip_dirs for part in rel.parts):
+        return False
+    return True
+
+
 print('=' * 72)
 print('静态快照校验 ——', SITE)
 print('=' * 72)
 
-if not SITE.exists():
-    print(f'[ERROR] 快照目录不存在：{SITE}')
-    print('        先运行：python manage.py build_snapshot -o _site')
+if not (SITE / 'index-generated.html').exists():
+    print(f'[ERROR] 没找到 index-generated.html，这里看起来不是快照目录：{SITE}')
+    print('        先运行：python manage.py build_snapshot')
     sys.exit(1)
 
-html_files = sorted(SITE.rglob('*.html'))
+html_files = sorted(p for p in SITE.rglob('*.html') if is_snapshot_page(p))
 print(f'\n共 {len(html_files)} 个 HTML 文件\n')
 
 # ---------- 1. 必备页面 ----------
@@ -125,7 +137,7 @@ note('static/js/main.js' in index_body, '首页没有引用脚本')
 print('\n目录结构抽样：')
 for item in sorted(SITE.rglob('*'))[:1]:
     pass
-for rel in ['index.html', 'index-preview-list.html', '.nojekyll', 'static/css/style.css',
+for rel in ['index.html', 'index-generated.html', '.nojekyll', 'static/css/style.css',
             'static/js/main.js', 'post/1/index.html', 'u-alice.html', 'u-admin.html']:
     mark = 'OK ' if (SITE / rel).exists() else '!! '
     print(f'  [{mark}] {rel}')

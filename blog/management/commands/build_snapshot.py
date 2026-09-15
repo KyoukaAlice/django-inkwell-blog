@@ -15,14 +15,20 @@ GitHub Pages 只能托管静态文件（HTML / CSS / JS），而 Django 是服�
 
 用法
 ----
-    python manage.py build_snapshot              # 输出到 docs/（GitHub Pages 可直接用）
-    python manage.py build_snapshot -o _site     # 换成别的目录
-    python manage.py build_snapshot --skip-admin # 不抓 /admin/ 后台界面
+    python manage.py build_snapshot               # 输出到仓库根目录（Pages 零配置生效）
+    python manage.py build_snapshot -o docs       # 输出到 docs/ 子目录
+    python manage.py build_snapshot --skip-admin  # 不抓 /admin/ 后台界面
 
-发布到 Pages 的步骤：把 docs/ 一起提交，然后在仓库 Settings -> Pages 里选
-「Deploy from a branch」+ 分支 main + 目录 /docs 即可。选 docs 这个目录名是
-因为它是 GitHub Pages 官方支持的两种目录之一（另一种是根目录），
-不需要在仓库里额外加 workflow 或改配置。
+为什么默认输出到根目录
+----------------------
+GitHub Pages 的「Source」有两种：分支的根目录，或分支的 /docs 目录。
+本仓库的 Pages 一开始被设成了「main + 根目录」，而改这个设置需要 token 具备
+Pages 写权限。与其让你去网页上点，不如把快照直接放到根目录 —— 这样
+Pages 会自动生效，完全不用改任何设置。
+
+根目录模式下只写「白名单内」的文件（HTML + preview.html + static/ + media/ +
+.nojekyll），绝不会碰 manage.py、README.md、blog/ 这些项目文件；
+仓库自带的 index.html 会被生成为一个跳转页，指向预览目录。
 """
 import re
 import shutil
@@ -37,6 +43,14 @@ from django.test.runner import DiscoverRunner
 
 from blog.management.commands.seed_demo import PASSWORD, SITE_OWNER
 from blog.models import Post
+
+# 前一次构建自己产出的文件清单（每次构建后重写），用于安全地清理旧产物。
+# 根目录模式下靠它只删自己上次生成的东西，不会误删项目文件。
+MANIFEST_NAME = '.snapshot-manifest.json'
+MANAGED_DIRS = ('static', 'media')
+
+# 根目录模式下允许写入的顶层名字（白名单，其余一律不碰）
+ROOT_MODE_ALLOWED = {'preview.html', MANIFEST_NAME, '.nojekyll'} | set(MANAGED_DIRS)
 
 # 需要抓取的页面：(路径, 输出文件名, 是否要登录, 说明)
 PAGES = [
@@ -140,21 +154,30 @@ class Command(BaseCommand):
     help = '把网站渲染成静态 HTML 快照（用于 GitHub Pages 预览）'
 
     def add_arguments(self, parser):
-        parser.add_argument('-o', '--output', default='docs',
-                            help='输出目录，默认 docs（GitHub Pages 可直接从该目录发布）')
+        parser.add_argument('-o', '--output', default='.',
+                            help='输出目录。默认 "." 即仓库根目录 —— 这样 GitHub Pages '
+                                 '用默认的「main 分支 + 根目录」就能零配置生效')
+        parser.add_argument('--docs', dest='output', action='store_const', const='docs',
+                            help='输出到 docs/ 子目录（等价于 -o docs）')
         parser.add_argument('--include-admin', action='store_true',
                             help='额外抓取 /admin/ 后台界面')
         parser.add_argument('--skip-admin', action='store_true',
                             help='不抓 /admin/ 后台界面（默认会抓，因为导航里的「后台管理」链接需要它）')
         parser.add_argument('--keep-output', action='store_true',
-                            help='输出目录已存在时不要清空，直接覆盖')
+                            help='子目录模式下不先清空输出目录')
 
     def handle(self, *args, **options):
-        output_dir = Path(settings.BASE_DIR) / options['output']
-        if output_dir.exists():
-            if not options['keep_output']:
+        base_dir = Path(settings.BASE_DIR)
+        output_dir = (base_dir / options['output']).resolve()
+        root_mode = output_dir == base_dir
+
+        if root_mode:
+            self._clean_previous(root_mode, output_dir)
+            output_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            if output_dir.exists() and not options['keep_output']:
                 shutil.rmtree(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
+            output_dir.mkdir(parents=True, exist_ok=True)
 
         self.stdout.write(self.style.MIGRATE_HEADING('\n准备临时数据库…'))
         setup_test_environment()
@@ -167,13 +190,77 @@ class Command(BaseCommand):
             include_admin = not options['skip_admin']
             written = self._render_all(output_dir, include_admin)
             self._copy_static(output_dir)
-            self._rewrite_links(output_dir)
             self._write_support_files(output_dir, written)
+            # 支持文件也参与链接改写，保证里面的 static/ 引用带对层级前缀
+            self._rewrite_links(output_dir)
+            self._write_manifest(root_mode, output_dir, written)
         finally:
             runner.teardown_databases(old_config)
             teardown_test_environment()
 
         self._report(output_dir, written)
+
+    # -- 根目录模式的安全清理 ----------------------------------------------
+    def _clean_previous(self, root_mode, output_dir):
+        """删除上一次构建的产物。
+
+        根目录模式下这步很危险：一不小心就把 manage.py / blog/ 删了。
+        所以只删「上次写进 manifest 的文件」；第一次运行没有 manifest 时，
+        就按白名单（生成的 HTML + static/ + media/ + .nojekyll）保守处理。
+        """
+        if not root_mode:
+            return
+        manifest_path = output_dir / MANIFEST_NAME
+        removed = 0
+        if manifest_path.exists():
+            try:
+                import json
+                data = json.loads(manifest_path.read_text(encoding='utf-8'))
+                for rel in data.get('files', []):
+                    target = (output_dir / rel).resolve()
+                    # 双保险：只允许删除输出目录内的东西
+                    if output_dir in target.parents and target.is_file():
+                        target.unlink()
+                        removed += 1
+                for rel in data.get('dirs', []):
+                    target = (output_dir / rel).resolve()
+                    if output_dir in target.parents and target.is_dir():
+                        shutil.rmtree(target)
+                        removed += 1
+            except Exception as exc:                # noqa: BLE001
+                self.stdout.write(self.style.WARNING(
+                    f'  [warn] 读取 {MANIFEST_NAME} 失败（{exc}），改为按白名单清理'))
+                self._clean_by_whitelist(output_dir)
+        else:
+            removed = self._clean_by_whitelist(output_dir)
+        if removed:
+            self.stdout.write(f'  已清理上次构建的 {removed} 个产物')
+
+    def _clean_by_whitelist(self, output_dir):
+        """没有 manifest 时的保守清理：只动自己生成的那批名字。"""
+        removed = 0
+        for item in output_dir.iterdir():
+            name = item.name
+            if item.is_dir() and name in MANAGED_DIRS:
+                shutil.rmtree(item)
+                removed += 1
+            elif item.is_file() and (name.endswith('.html') or name == '.nojekyll'):
+                item.unlink()
+                removed += 1
+        return removed
+
+    def _write_manifest(self, root_mode, output_dir, written):
+        if not root_mode:
+            return
+        import json
+        files = [item['file'] for item in written]
+        files += ['index-preview-list.html', '.nojekyll']
+        dirs = [d for d in MANAGED_DIRS if (output_dir / d).exists()]
+        (output_dir / MANIFEST_NAME).write_text(
+            json.dumps({'files': sorted(set(files)), 'dirs': dirs},
+                       ensure_ascii=False, indent=2),
+            encoding='utf-8',
+        )
 
     # -- 渲染页面 ----------------------------------------------------------
     def _render_all(self, output_dir, include_admin):
@@ -427,8 +514,9 @@ class Command(BaseCommand):
         # .nojekyll：阻止 GitHub Pages 的 Jekyll 处理，保证 _ 开头的文件也能访问
         (output_dir / '.nojekyll').write_text('', encoding='utf-8')
 
-        # 预览目录页：用 iframe 嵌每个页面，方便逐页查看
-        # 预览目录页里的每一项都直接链到对应页面
+        # 预览目录页：把每个页面都列出来，点一下直接跳过去。
+        # 文件名用 index-generated.html 而不是 index.html ——
+        # 根目录模式下 index.html 要留给站点首页，不能被覆盖。
         cards = '\n'.join(
             f'      <li><a href="{item["file"]}">{item["title"]}</a>'
             f' <code>{item["file"]}</code></li>'
@@ -439,14 +527,15 @@ class Command(BaseCommand):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DjangoBlog 静态预览</title>
+<title>DjangoBlog 静态预览目录</title>
 <style>
   body {{ margin:0; font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
          background:#f4f6fa; color:#1b2434; line-height:1.7; }}
   .hero {{ background:linear-gradient(120deg,#0aa7e0,#fb7299); color:#fff; padding:40px 24px; }}
   .hero h1 {{ margin:0 0 8px; font-size:1.7rem; }}
-  .hero p {{ margin:0; opacity:.95; max-width:720px; }}
-  .wrap {{ max-width:900px; margin:0 auto; padding:26px 24px 60px; }}
+  .hero p {{ margin:0; opacity:.95; max-width:760px; }}
+  .hero a {{ color:#fff; }}
+  .wrap {{ max-width:920px; margin:0 auto; padding:26px 24px 60px; }}
   .tip {{ background:#fff7e6; border:1px solid #f5d9a3; border-radius:12px; padding:14px 18px; margin-bottom:22px; font-size:.9rem; }}
   ul {{ list-style:none; padding:0; margin:0; }}
   li {{ background:#fff; border:1px solid #e5e9f0; border-radius:10px; margin-bottom:8px; }}
@@ -458,15 +547,15 @@ class Command(BaseCommand):
 <body>
 <div class="hero">
   <h1>📸 DjangoBlog 静态预览</h1>
-  <p>这是把网站渲染成静态 HTML 后的快照，用于在 GitHub Pages 上展示界面。
-     点击下面任意一页即可查看，每页顶部有返回本目录的入口。</p>
+  <p>这是把网站渲染成静态 HTML 后的快照。点击下面任意一页查看，或
+     <a href="index.html">直接进入站点首页 →</a></p>
 </div>
 <div class="wrap">
   <div class="tip">
     <b>⚠️ 这是静态快照，不是运行中的网站</b><br>
-    页面样式、排版、评论楼中楼都是真实的渲染结果，但所有需要服务器的操作
-    （登录、发文、点赞、发评论）都不会生效——GitHub Pages 只能托管静态文件，跑不了 Django。
-    想看完整功能请按 README 在本地运行，或在支持 Python 的平台部署。
+    页面样式、排版、评论楼中楼都是真实的渲染结果，但需要服务端的操作
+    （登录、发文、点赞、发评论）不会生效 —— GitHub Pages 只能托管静态文件，跑不了 Django。
+    想看完整功能请按 README 在本地运行，或部署到支持 Python 的平台。
   </div>
   <ul>
 {cards}
@@ -475,23 +564,23 @@ class Command(BaseCommand):
 </body>
 </html>
 """
-        (output_dir / 'index-preview-list.html').write_text(index, encoding='utf-8')
+        (output_dir / 'index-generated.html').write_text(index, encoding='utf-8')
 
         # 不再生成 preview.html：
         # 预览目录页本身就直接列出所有页面并链过去，再套一层 iframe 反而多余，
         # 而且 iframe 的 src 需要运行时才知道（会留下未替换的占位符）。
 
     def _report(self, output_dir, written):
-        total_bytes = sum(f.stat().st_size for f in output_dir.rglob('*') if f.is_file())
-        html_count = sum(1 for _ in output_dir.rglob('*.html'))
+        total_bytes = sum(f.stat().st_size for f in output_dir.rglob('*')
+                          if f.is_file() and 'static' not in f.parts)
+        page_count = len(written)
         self.stdout.write(self.style.SUCCESS(
             f'\n快照生成完成\n'
             f'  输出目录 : {output_dir}\n'
-            f'  HTML 页面: {html_count} 个\n'
-            f'  总大小   : {total_bytes / 1024 / 1024:.1f} MB\n'
-            f'\n推到 GitHub 后，Pages 地址一般是：\n'
-            f'  https://<用户名>.github.io/<仓库名>/index-preview-list.html   ← 预览目录\n'
-            f'  https://<用户名>.github.io/<仓库名>/index.html               ← 直接进首页\n'
-            f'\n本地预览可以先起个静态服务器：\n'
-            f'  cd {output_dir.name} && python -m http.server 8080\n'
+            f'  页面数量 : {page_count} 个（另有 static/ 静态资源）\n'
+            f'\nGitHub Pages 地址（Source = main 分支 + 根目录时自动生效）：\n'
+            f'  https://<用户名>.github.io/<仓库名>/index-generated.html   ← 预览目录\n'
+            f'  https://<用户名>.github.io/<仓库名>/index.html             ← 站点首页\n'
+            f'\n本地预览：在输出目录里执行 python -m http.server 8080\n'
+            f'\n改完记得提交：git add -A && git commit -m "chore: 更新静态预览" && git push\n'
         ))
