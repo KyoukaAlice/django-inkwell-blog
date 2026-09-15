@@ -257,12 +257,19 @@ comment.save(update_fields=['is_deleted', 'content', 'image'])
 
 ### 2.2 改造后：CSS 变量 + 模板继承
 
+<!-- 注意：下面这段被 raw 标签包住，raw 标签本身不要删。
+     GitHub Pages 用 Jekyll 解析仓库里的 Markdown，Jekyll 会把花括号加百分号
+     当成 Liquid 标签 —— 遇到 Django 模板标签时直接构建失败，并给你发报错邮件。
+     raw 能让 Jekyll 跳过这段不解析，渲染出来的文档依然原样显示。
+     自检命令：python verify_liquid.py -->
+{% raw %}
 - **`static/css/style.css`（约 1100 行）**：唯一的样式表，所有颜色 / 圆角 / 阴影 / 间距
   都用 CSS 变量定义在 `:root` 里，改一处全局生效；
 - **`templates/blog/base.html`**：唯一的页面骨架（顶栏 + 内容区 + 侧边栏 + 页脚 + 消息提示），
   其余页面全部 `{% extends 'blog/base.html' %}`，只写自己的内容块；
 - **组件化 partial**：文章卡片、分页、头像、侧边栏、通知面板、单条评论
   都是独立模板，用 `{% include %}` 复用。
+{% endraw %}
 
 ### 2.3 具体美化了什么
 
