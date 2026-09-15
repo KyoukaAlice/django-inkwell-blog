@@ -1,0 +1,45 @@
+{% comment %}导航栏通知下拉面板（最近 8 条）{% endcomment %}
+<div class="notif-panel" id="notif-panel">
+    <div class="panel-head">
+        <span>🔔 通知</span>
+        <div class="flex gap-10 items-center">
+            <button type="button" id="mark-all-read" data-url="{% url 'notification_read' %}">全部已读</button>
+        </div>
+    </div>
+    {% for n in user.notifications.all|slice:":8" %}
+        <a class="notif-item {% if not n.is_read %}unread{% endif %}" href="{{ n.get_absolute_url }}">
+            <span class="ico">{{ n.icon }}</span>
+            <span>
+                {{ n.summary }}
+                <time>{{ n.created|date:"m-d H:i" }}</time>
+            </span>
+        </a>
+    {% empty %}
+        <div class="notif-item" style="justify-content: center; color: var(--text-3);">
+            还没有任何通知
+        </div>
+    {% endfor %}
+    <div style="padding: 8px; border-top: 1px solid var(--border); margin-top: 5px;">
+        <a href="{% url 'notifications' %}" class="btn btn-ghost btn-sm btn-block">查看全部通知</a>
+    </div>
+</div>
+<script>
+    (function () {
+        var btn = document.getElementById('mark-all-read');
+        if (!btn || btn.dataset.ready) return;
+        btn.dataset.ready = '1';
+        btn.addEventListener('click', async function () {
+            var form = new FormData();
+            form.append('all', '1');
+            try {
+                await window.DjangoBlog.post(btn.dataset.url, form);
+                document.querySelectorAll('.notif-item.unread').forEach(function (el) {
+                    el.classList.remove('unread');
+                });
+                var dot = document.getElementById('notif-dot');
+                if (dot) dot.classList.add('hidden');
+                window.DjangoBlog.toast('已全部标记为已读');
+            } catch (err) { window.DjangoBlog.toast(err.message, 'err'); }
+        });
+    })();
+</script>

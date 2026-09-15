@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0aa7e0">
+    <title>编辑文章 - 我的博客</title>
+    <meta name="description" content="一个基于 Django 的个人博客系统：文章、标签、评论互动与数据统计。">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+    <link rel="stylesheet" href="../../static/css/style.css">
+    
+    <script>
+        // 提前应用主题，避免深色模式下的白色闪屏
+        (function () {
+            var saved = localStorage.getItem('djangoblog-theme');
+            if (!saved) {
+                saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                    ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+</head>
+<body>
+
+
+<header class="header">
+    <div class="header-inner">
+        <a href="../../index.html" class="logo">
+            <span class="logo-mark">📝</span>
+            <span>我的博客<small>Django 博客系统</small></span>
+        </a>
+
+        <button class="icon-btn menu-toggle" title="菜单" aria-label="展开菜单">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+
+        <nav class="nav">
+            <a href="../../index.html" class="">首页</a>
+            <a href="../../tags.html" class="">标签</a>
+            <a href="../../about.html" class="">关于</a>
+            
+                <a href="../../post-create.html" class="">写文章</a>
+                <a href="../../profile.html" class="">个人中心</a>
+            
+        </nav>
+
+        <div class="header-actions">
+            <form class="search-mini hide-sm" method="get" action="../../search.html" role="search">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input type="search" name="keyword" placeholder="搜索文章…" value="" aria-label="搜索">
+            </form>
+
+            <button class="icon-btn theme-toggle" title="切换主题" aria-label="切换深色/浅色模式"></button>
+
+            
+                <div class="notif-wrap" style="position: relative;">
+                    <button class="icon-btn" data-dropdown="#notif-panel" title="通知" aria-label="通知">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                        <span class="dot " id="notif-dot">3</span>
+                    </button>
+                    
+<div class="notif-panel" id="notif-panel">
+    <div class="panel-head">
+        <span>🔔 通知</span>
+        <div class="flex gap-10 items-center">
+            <button type="button" id="mark-all-read" data-url="/notifications/read/">全部已读</button>
+        </div>
+    </div>
+    
+        <a class="notif-item unread" href="../../post/1/index.html">
+            <span class="ico">👍</span>
+            <span>
+                alice 点赞了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
+                <time>09-15 18:09</time>
+            </span>
+        </a>
+    
+        <a class="notif-item unread" href="../../post/1/index.html">
+            <span class="ico">⭐</span>
+            <span>
+                bob 收藏了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
+                <time>09-15 18:09</time>
+            </span>
+        </a>
+    
+        <a class="notif-item unread" href="../../post/1/index.html">
+            <span class="ico">💬</span>
+            <span>
+                bob 评论了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
+                <time>09-15 18:09</time>
+            </span>
+        </a>
+    
+    <div style="padding: 8px; border-top: 1px solid var(--border); margin-top: 5px;">
+        <a href="../../notifications.html" class="btn btn-ghost btn-sm btn-block">查看全部通知</a>
+    </div>
+</div>
+<script>
+    (function () {
+        var btn = document.getElementById('mark-all-read');
+        if (!btn || btn.dataset.ready) return;
+        btn.dataset.ready = '1';
+        btn.addEventListener('click', async function () {
+            var form = new FormData();
+            form.append('all', '1');
+            try {
+                await window.DjangoBlog.post(btn.dataset.url, form);
+                document.querySelectorAll('.notif-item.unread').forEach(function (el) {
+                    el.classList.remove('unread');
+                });
+                var dot = document.getElementById('notif-dot');
+                if (dot) dot.classList.add('hidden');
+                window.DjangoBlog.toast('已全部标记为已读');
+            } catch (err) { window.DjangoBlog.toast(err.message, 'err'); }
+        });
+    })();
+</script>
+
+                </div>
+
+                <div class="user-menu">
+                    <button class="user-btn" data-dropdown="#user-dropdown">
+                        
+
+    
+        <span class="avatar avatar-xs" style="background: #8b5cf6;" title="admin">A</span>
+    
+
+
+                        <span class="hide-sm">站长</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="dropdown" id="user-dropdown">
+                        <div class="dropdown-head">
+                            <strong>站长</strong>
+                            <span>@admin</span>
+                        </div>
+                        <a href="../../u-admin.html">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            我的主页
+                        </a>
+                        <a href="../../profile.html">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                            个人中心
+                        </a>
+                        <a href="../../post-create.html">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                            写新文章
+                        </a>
+                        <a href="../../notifications.html">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                            我的通知 <span class="badge badge-danger">3</span>
+                        </a>
+                        <a href="../../profile-edit.html">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 7 2.6h.1A1.6 1.6 0 0 0 8.2 1V1a2 2 0 1 1 4 0v.1"/></svg>
+                            编辑资料
+                        </a>
+                        
+                        <a href="../../admin.html">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6z"/></svg>
+                            后台管理
+                        </a>
+                        
+                        <hr>
+                        <form method="post" action="../../logout">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="LtPFVTscAG7pjIk5qX26NeYTGGtcBHjwvhs6dchM3C8TJSb69l6uIjCZn3AfzHfk">
+                            <button type="submit" class="danger">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+                                退出登录
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            
+        </div>
+    </div>
+</header>
+
+
+<div class="wrap">
+    <main class="main">
+        
+
+        
+<div class="breadcrumb">
+    <a href="../../index.html">首页</a>
+    <span class="sep">/</span>
+    
+        <a href="../../post/4/index.html">毕业设计选题到答辩：一个博客系统能讲哪些技术点</a>
+        <span class="sep">/</span>
+    
+    <span>编辑文章</span>
+</div>
+
+<div class="page-head">
+    <div class="page-head-bar">
+        <div>
+            <h1>编辑文章</h1>
+            <p>正文支持 Markdown 语法，保存后会渲染成带代码高亮的排版</p>
+        </div>
+        <a href="../../post/4/index.html"
+           class="btn btn-ghost btn-sm">取消</a>
+    </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="post-form">
+    <input type="hidden" name="csrfmiddlewaretoken" value="LtPFVTscAG7pjIk5qX26NeYTGGtcBHjwvhs6dchM3C8TJSb69l6uIjCZn3AfzHfk">
+
+    
+
+    <div class="editor-layout">
+        <div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label" for="id_title">标题</label>
+                        <input type="text" name="title" value="毕业设计选题到答辩：一个博客系统能讲哪些技术点" class="form-control" placeholder="起一个吸引人的标题…" maxlength="200" required id="id_title">
+                        
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label class="form-label" for="id_content">
+                            正文 <span class="text-xs text-3">（Markdown）</span>
+                        </label>
+                        <textarea name="content" cols="40" rows="18" class="form-control markdown-editor" placeholder="正文支持 Markdown 语法：
+
+## 二级标题
+**加粗** *斜体* `行内代码`
+
+```python
+print(&quot;hello&quot;)
+```
+
+&gt; 引用
+- 列表项" required id="id_content">
+## 选题不丢人，讲不透才丢人
+
+「个人博客系统」是最常见的毕设题目之一，评委不会因为题目普通扣分，
+但会因为你**讲不清楚自己的设计决策**而扣分。
+
+## 可以展开讲的六个点
+
+### 1. 数据建模
+
+为什么评论要用 `parent` + `root` 两个自关联外键？
+为什么删除评论用软删除（`is_deleted`）而不是物理删除？
+——软删除是为了保住楼层号，否则「#5 楼」会凭空消失。
+
+### 2. 权限控制
+
+| 操作 | 谁能做 |
+| --- | --- |
+| 编辑 / 删除文章 | 只有作者 |
+| 删除评论 | 评论作者本人 **或** 文章作者 |
+| 查看草稿 | 只有作者 |
+
+### 3. 互动模块
+
+点赞用 `unique_together = (&#x27;user&#x27;, &#x27;post&#x27;)` 保证一人一票，
+再次点击同一按钮就是取消。
+
+### 4. 站内通知
+
+在评论、点赞、收藏的写入路径上触发通知，注意**不要给自己发通知**。
+
+### 5. 性能
+
+用 `assertNumQueries` 守住查询次数，把「性能」变成可验证的指标。
+
+### 6. 安全
+
+CSRF、XSS 过滤、开放重定向校验、上传类型白名单——这四个都做了就够讲了。
+
+&gt; 答辩技巧：每个技术点都准备一句「如果不这么做会怎样」，评委很吃这一套。
+</textarea>
+                        
+                        <span class="form-hint" id="content-count">0 字</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head"><h3>👀 摘要</h3></div>
+                <div class="card-body">
+                    <div class="form-group mb-0">
+                        <textarea name="excerpt" cols="40" rows="2" class="form-control" placeholder="摘要（可选，不填会自动从正文截取）" maxlength="300" id="id_excerpt">
+博客系统看起来简单，但把评论、权限、ORM 优化、通知这些做扎实，答辩时能讲的内容非常多。</textarea>
+                        <span class="form-hint">不填写时会自动从正文截取前 150 字作为列表页摘要。</span>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="editor-side">
+            <div class="card">
+                <div class="card-head"><h3>⚙️ 发布设置</h3></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label" for="id_status">状态</label>
+                        <select name="status" class="form-control" id="id_status">
+  <option value="draft">草稿</option>
+
+  <option value="published" selected>发布</option>
+
+</select>
+                        <span class="form-hint">草稿只有自己可见，随时可以发布。</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_category">分类</label>
+                        <select name="category" class="form-control" id="id_category">
+  <option value="">— 未分类 —</option>
+
+  <option value="2">项目实战</option>
+
+  <option value="3" selected>学习路线</option>
+
+  <option value="4">生活随笔</option>
+
+  <option value="1">技术笔记</option>
+
+</select>
+                        
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label class="form-label" for="id_tags_input">标签</label>
+                        <input type="text" name="tags_input" value="Django, MySQL, 毕业设计" id="id_tags_input">
+                        <span class="form-hint">用逗号或空格分隔，最多 6 个。例如：Python, Django, 毕业设计</span>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head"><h3>🖼️ 封面图</h3></div>
+                <div class="card-body">
+                    
+                    <input type="file" name="cover" class="form-control" accept="image/*" id="id_cover">
+                    <span class="form-hint">可选。建议 16:9，会显示在文章列表卡片右侧。</span>
+                    
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head"><h3>📖 Markdown 速查</h3></div>
+                <div class="card-body md-help">
+                    <div><code>## 标题</code> 二级标题</div>
+                    <div><code>**粗体**</code> / <code>*斜体*</code></div>
+                    <div><code>`代码`</code> 行内代码</div>
+                    <div><code>```python</code> 代码块（带高亮）</div>
+                    <div><code>&gt; 引用</code> 引用块</div>
+                    <div><code>- 列表</code> 无序列表</div>
+                    <div><code>[文字](链接)</code> 超链接</div>
+                    <div><code>![说明](图片地址)</code> 图片</div>
+                    <div class="divider"></div>
+                    <div><kbd>Tab</kbd> 缩进 4 空格，直接粘贴 Markdown 也可以。</div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                💾 保存修改
+            </button>
+        </div>
+    </div>
+</form>
+
+    </main>
+
+    
+</div>
+
+
+<footer class="footer">
+    <div class="footer-inner">
+        <div>
+            <strong style="color: var(--text-2);">📝 我的博客</strong>
+            <span> · 基于 Django 4.2 构建 · 分享思考与成长</span>
+        </div>
+        <div class="footer-links">
+            <a href="../../index.html">首页</a>
+            <a href="../../tags.html">标签</a>
+            <a href="../../about.html">关于本站</a>
+            <a href="../../notifications.html">通知</a>
+            <span>&copy; 2026 All rights reserved.</span>
+        </div>
+    </div>
+</footer>
+
+<script>window.DJANGO_BLOG = { notifPollUrl: "/notifications/poll/" };</script>
+<script src="../../static/js/main.js"></script>
+
+<script>
+    (function () {
+        var content = document.getElementById('id_content');
+        var count = document.getElementById('content-count');
+        if (content && count) {
+            var update = function () {
+                var len = content.value.length;
+                count.textContent = len + ' 字 · 约 ' + Math.max(1, Math.round(len / 400)) + ' 分钟读完';
+            };
+            content.addEventListener('input', update);
+            update();
+        }
+        // Ctrl/Cmd + S 保存
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                document.getElementById('post-form').requestSubmit();
+            }
+        });
+    })();
+</script>
+
+</body>
+</html>

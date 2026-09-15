@@ -1,0 +1,19 @@
+{% comment %}
+头像组件：优先显示上传的头像，没有则显示首字母色块。
+参数：profile（UserProfile 实例，可为空）、user（User 实例）、size（avatar-xs / avatar-sm / avatar / avatar-lg / avatar-xl）
+{% endcomment %}
+{% if profile %}
+    {% if profile.display_avatar %}
+        <img class="avatar {{ size|default:'avatar' }}" src="{{ profile.display_avatar }}" alt="{{ profile.user.username }} 的头像" loading="lazy">
+    {% else %}
+        <span class="avatar {{ size|default:'avatar' }}" style="background: {{ profile.avatar_color }};" title="{{ profile.user.username }}">{{ profile.avatar_letter }}</span>
+    {% endif %}
+{% elif user %}
+    {% if user.profile.display_avatar %}
+        <img class="avatar {{ size|default:'avatar' }}" src="{{ user.profile.display_avatar }}" alt="{{ user.username }} 的头像" loading="lazy">
+    {% else %}
+        <span class="avatar {{ size|default:'avatar' }}" style="background: {{ user.profile.avatar_color }};" title="{{ user.username }}">{{ user.profile.avatar_letter }}</span>
+    {% endif %}
+{% else %}
+    <span class="avatar {{ size|default:'avatar' }}" style="background: var(--text-3);">?</span>
+{% endif %}

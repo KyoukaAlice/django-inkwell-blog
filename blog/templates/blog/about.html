@@ -1,0 +1,128 @@
+{% extends 'blog/base.html' %}
+{% load static blog_extras %}
+{% comment %}
+关于本站：站点介绍 + 全站数据 + 最多阅读 / 活跃作者 + 功能清单
+视图上下文：stats（posts/users/comments/likes/tags/views）、top_posts、top_authors
+{% endcomment %}
+
+{% block title %}关于本站 - 我的博客{% endblock %}
+{% block description %}关于我的博客：一个基于 Django 4.2 的个人博客系统 / 毕业设计，支持 Markdown 写作、楼中楼评论与站内通知。{% endblock %}
+
+{% block content %}
+{% comment %}站点介绍横幅{% endcomment %}
+<section class="hero-about">
+    <h1>📝 我的博客</h1>
+    <p>
+        这是一个基于 Django 4.2 开发的个人博客系统，也是我的毕业设计作品。
+        它包含 Markdown 文章写作与渲染、楼中楼评论互动、标签与分类归档、点赞收藏、
+        站内通知以及数据统计等完整功能；前端使用自研的响应式设计系统，
+        在手机与桌面端都有一致的阅读体验。
+    </p>
+    <div class="tags">
+        <span>Django 4.2</span>
+        <span>MySQL</span>
+        <span>Markdown</span>
+        <span>AJAX</span>
+        <span>响应式</span>
+    </div>
+</section>
+
+{% comment %}全站数据总览{% endcomment %}
+<div class="big-stats mb-24">
+    <div class="big-stat">
+        <div class="v">{{ stats.posts|humanize_count }}</div>
+        <div class="k">文章</div>
+    </div>
+    <div class="big-stat">
+        <div class="v">{{ stats.users|humanize_count }}</div>
+        <div class="k">用户</div>
+    </div>
+    <div class="big-stat">
+        <div class="v">{{ stats.comments|humanize_count }}</div>
+        <div class="k">评论</div>
+    </div>
+    <div class="big-stat">
+        <div class="v">{{ stats.likes|humanize_count }}</div>
+        <div class="k">点赞</div>
+    </div>
+    <div class="big-stat">
+        <div class="v">{{ stats.tags|humanize_count }}</div>
+        <div class="k">标签</div>
+    </div>
+    <div class="big-stat">
+        <div class="v">{{ stats.views|humanize_count }}</div>
+        <div class="k">阅读量</div>
+    </div>
+</div>
+
+{% comment %}两栏：最多阅读 + 活跃作者（.card + .card 自带外边距，这里置零）{% endcomment %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+    <div class="card" style="margin-top: 0;">
+        <div class="card-head">
+            <h3>🔥 最多阅读</h3>
+            <a class="more" href="{% url 'index' %}?sort=views">更多 →</a>
+        </div>
+        <div class="card-body" style="padding: 10px;">
+            {% if top_posts %}
+            <ol class="rank-list">
+                {% for p in top_posts %}
+                <li>
+                    <a class="rank-item" href="{{ p.get_absolute_url }}">
+                        <span class="rank-no">{{ forloop.counter }}</span>
+                        <span style="min-width: 0;">
+                            <span class="rank-title">{{ p.title }}</span>
+                            <span class="rank-sub">👁 {{ p.views|humanize_count }} · ❤ {{ p.like_count|humanize_count }} · 💬 {{ p.comment_count|humanize_count }}</span>
+                        </span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <div class="empty" style="padding: 32px 16px; border: none;">还没有已发布的文章。</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 0;">
+        <div class="card-head">
+            <h3>👥 活跃作者</h3>
+            <span class="more">按文章数排序</span>
+        </div>
+        <div class="card-body" style="padding: 10px;">
+            {% if top_authors %}
+                {% for a in top_authors %}
+                <a class="author-mini" href="{% url 'user_profile' a.username %}">
+                    {% include 'blog/partials/avatar.html' with profile=a.profile size='avatar-sm' %}
+                    <div style="min-width: 0;">
+                        <div class="name truncate">{{ a.first_name|default:a.username }}</div>
+                        <div class="sub">{{ a.published_count }} 篇文章</div>
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+            <div class="empty" style="padding: 32px 16px; border: none;">还没有作者发布文章。</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% comment %}功能清单{% endcomment %}
+<div class="card mt-24">
+    <div class="card-head">
+        <h3>✨ 功能清单</h3>
+        <span class="more">Django 毕业设计</span>
+    </div>
+    <div class="card-body">
+        <ul style="margin: 0; padding-left: 1.3em; line-height: 2; color: var(--text-2);">
+            <li>评论区：楼中楼回复、点赞、表情与配图</li>
+            <li>Markdown 文章：代码高亮、目录与阅读时长</li>
+            <li>标签与分类：归档浏览、标签云</li>
+            <li>点赞收藏：文章点赞 / 点踩与收藏夹</li>
+            <li>站内通知：评论、回复、点赞实时提醒</li>
+            <li>用户主页：个人资料、文章与评论统计</li>
+            <li>全文搜索：文章、用户与标签一次搜完</li>
+            <li>后台管理：Django Admin 管理全部数据</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

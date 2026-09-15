@@ -1,0 +1,36 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# ---- virtual environment ----
+.venv/
+venv/
+env/
+
+# ---- secrets: never commit these ----
+.env
+.env.local
+
+# ---- Django runtime ----
+db.sqlite3
+db.sqlite3-journal
+*.log
+staticfiles/
+
+# ---- user uploads (avatars / covers / comment images) ----
+media/
+
+# NOTE: docs/ is intentionally NOT ignored - it is the static snapshot that
+# GitHub Pages serves. Regenerate it with "python manage.py build_snapshot".
+# The docs/media folder (if any) is a copy, so keep it tracked too:
+!docs/media/
+!docs/media/**
+
+# ---- editors / OS ----
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+desktop.ini

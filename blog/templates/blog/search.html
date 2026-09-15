@@ -1,0 +1,121 @@
+{% extends 'blog/base.html' %}
+{% load static blog_extras %}
+{% comment %}
+搜索结果页：相关文章 + 相关用户 + 相关标签
+视图上下文：posts(=page_obj)、page_obj、keyword、sort、sort_options、result_count、
+           authors（带 published_count）、tags（带 published_count）、categories
+{% endcomment %}
+
+{% block title %}搜索 "{{ keyword }}" - 我的博客{% endblock %}
+{% block description %}{% if keyword %}「{{ keyword }}」的搜索结果：找到 {{ result_count }} 篇相关文章。{% else %}搜索我的博客里的文章、用户与标签。{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <h1>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        搜索
+    </h1>
+    <p>一次搜索文章标题 / 正文 / 标签，同时匹配用户与标签。</p>
+</div>
+
+{% comment %}搜索框：保留当前排序，回车即可提交{% endcomment %}
+<form class="filter-bar" method="get" action="{% url 'search' %}" role="search">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <div class="flex items-center gap-10 wrap-gap">
+        <div class="filter-field" style="flex: 1; min-width: 220px;">
+            <input type="search" name="keyword" value="{{ keyword }}" placeholder="输入关键词，例如：Django、评论、Markdown…" aria-label="搜索关键词" autofocus>
+        </div>
+        <button type="submit" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            搜索
+        </button>
+        {% if keyword %}<a href="{% url 'search' %}" class="btn btn-ghost">清空</a>{% endif %}
+    </div>
+</form>
+
+{% if keyword %}
+    {% comment %}结果概览 + 排序切换{% endcomment %}
+    <div class="flex items-center justify-between wrap-gap gap-10 mb-16">
+        <p class="text-2 mb-0">找到 <b>{{ result_count }}</b> 篇相关文章</p>
+        <div class="sort-bar">
+            {% for value, item in sort_options.items %}
+            <a href="{% url_replace sort=value reset_page=True %}" class="{% if sort == value %}active{% endif %}">{{ item.0 }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% comment %}1. 相关文章{% endcomment %}
+    {% if posts %}
+    <div class="post-list">
+        {% for post in posts %}
+            {% include 'blog/partials/post_card.html' with post=post %}
+        {% endfor %}
+    </div>
+    {% include 'blog/partials/pagination.html' with page_obj=page_obj %}
+    {% else %}
+    <div class="empty">
+        <div class="ico">📭</div>
+        <h3>没有找到相关文章</h3>
+        <p>换个关键词试试，或者看看下面的相关用户与标签。</p>
+        <a href="{% url 'index' %}" class="btn btn-primary">浏览全部文章</a>
+    </div>
+    {% endif %}
+
+    {% comment %}2. 相关用户{% endcomment %}
+    {% if authors %}
+    <div class="card mt-24">
+        <div class="card-head">
+            <h3>👤 相关用户</h3>
+            <span class="more">共 {{ authors|length }} 位</span>
+        </div>
+        <div class="card-body" style="padding: 10px;">
+            {% for a in authors %}
+            <a class="author-mini" href="{% url 'user_profile' a.username %}">
+                {% include 'blog/partials/avatar.html' with profile=a.profile size='avatar-sm' %}
+                <div style="min-width: 0;">
+                    <div class="name truncate">{{ a.first_name|default:a.username }}</div>
+                    <div class="sub">{{ a.published_count }} 篇文章</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% comment %}3. 相关标签{% endcomment %}
+    {% if tags %}
+    <div class="card mt-24">
+        <div class="card-head">
+            <h3>🏷️ 相关标签</h3>
+            <a class="more" href="{% url 'tag_cloud' %}">全部标签 →</a>
+        </div>
+        <div class="card-body">
+            <div class="tag-cloud">
+                {% for tag in tags %}
+                <a class="tag-chip" href="{% url 'tag_detail' tag.slug %}"># {{ tag.name }} <span class="n">{{ tag.published_count }}</span></a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+{% else %}
+    {% comment %}没有关键词时的友好空状态{% endcomment %}
+    <div class="empty">
+        <div class="ico">
+            <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        </div>
+        <h3>想看点什么？</h3>
+        <p>在上面的输入框里填写关键词并回车，就能同时搜索文章、用户与标签。</p>
+        {% if categories %}
+        <div class="tag-cloud" style="justify-content: center;">
+            {% for cat in categories %}
+            <a class="tag-chip" href="{% url 'index' %}?category={{ cat.id }}">📂 {{ cat.name }}</a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <a href="{% url 'index' %}" class="btn btn-primary">先逛逛首页</a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

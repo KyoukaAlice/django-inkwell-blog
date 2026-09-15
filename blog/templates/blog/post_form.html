@@ -1,0 +1,170 @@
+{% extends 'blog/base.html' %}
+{% load static blog_extras %}
+{% comment %}文章发布 / 编辑页：左侧正文编辑器 + 右侧发布设置{% endcomment %}
+
+{% block title %}{{ action }}文章 - 我的博客{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'index' %}">首页</a>
+    <span class="sep">/</span>
+    {% if is_edit %}
+        <a href="{% url 'post_detail' post.id %}">{{ post.title|truncatechars:24 }}</a>
+        <span class="sep">/</span>
+    {% endif %}
+    <span>{{ action }}文章</span>
+</div>
+
+<div class="page-head">
+    <div class="page-head-bar">
+        <div>
+            <h1>{{ action }}文章</h1>
+            <p>正文支持 Markdown 语法，保存后会渲染成带代码高亮的排版</p>
+        </div>
+        <a href="{% if is_edit %}{% url 'post_detail' post.id %}{% else %}{% url 'index' %}{% endif %}"
+           class="btn btn-ghost btn-sm">取消</a>
+    </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="post-form">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-error">
+            <span>⚠️</span>
+            <span>{% for e in form.non_field_errors %}{{ e }}<br>{% endfor %}</span>
+        </div>
+    {% endif %}
+
+    <div class="editor-layout">
+        <div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.title.id_for_label }}">标题</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <ul class="form-error">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label class="form-label" for="{{ form.content.id_for_label }}">
+                            正文 <span class="text-xs text-3">（Markdown）</span>
+                        </label>
+                        {{ form.content }}
+                        {% if form.content.errors %}
+                            <ul class="form-error">{% for e in form.content.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                        <span class="form-hint" id="content-count">0 字</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head"><h3>👀 摘要</h3></div>
+                <div class="card-body">
+                    <div class="form-group mb-0">
+                        {{ form.excerpt }}
+                        <span class="form-hint">不填写时会自动从正文截取前 150 字作为列表页摘要。</span>
+                        {% if form.excerpt.errors %}
+                            <ul class="form-error">{% for e in form.excerpt.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="editor-side">
+            <div class="card">
+                <div class="card-head"><h3>⚙️ 发布设置</h3></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.status.id_for_label }}">状态</label>
+                        {{ form.status }}
+                        <span class="form-hint">草稿只有自己可见，随时可以发布。</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.category.id_for_label }}">分类</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                            <ul class="form-error">{% for e in form.category.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label class="form-label" for="{{ form.tags_input.id_for_label }}">标签</label>
+                        {{ form.tags_input }}
+                        <span class="form-hint">用逗号或空格分隔，最多 6 个。例如：Python, Django, 毕业设计</span>
+                        {% if form.tags_input.errors %}
+                            <ul class="form-error">{% for e in form.tags_input.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head"><h3>🖼️ 封面图</h3></div>
+                <div class="card-body">
+                    {% if is_edit and post.cover %}
+                        <img src="{{ post.cover.url }}" alt="当前封面"
+                             style="border-radius: var(--radius-sm); margin-bottom: 12px; border: 1px solid var(--border);">
+                    {% endif %}
+                    {{ form.cover }}
+                    <span class="form-hint">可选。建议 16:9，会显示在文章列表卡片右侧。</span>
+                    {% if form.cover.errors %}
+                        <ul class="form-error">{% for e in form.cover.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head"><h3>📖 Markdown 速查</h3></div>
+                <div class="card-body md-help">
+                    <div><code>## 标题</code> 二级标题</div>
+                    <div><code>**粗体**</code> / <code>*斜体*</code></div>
+                    <div><code>`代码`</code> 行内代码</div>
+                    <div><code>```python</code> 代码块（带高亮）</div>
+                    <div><code>&gt; 引用</code> 引用块</div>
+                    <div><code>- 列表</code> 无序列表</div>
+                    <div><code>[文字](链接)</code> 超链接</div>
+                    <div><code>![说明](图片地址)</code> 图片</div>
+                    <div class="divider"></div>
+                    <div><kbd>Tab</kbd> 缩进 4 空格，直接粘贴 Markdown 也可以。</div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                {% if is_edit %}💾 保存修改{% else %}🚀 发布文章{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block sidebar %}{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        var content = document.getElementById('{{ form.content.id_for_label }}');
+        var count = document.getElementById('content-count');
+        if (content && count) {
+            var update = function () {
+                var len = content.value.length;
+                count.textContent = len + ' 字 · 约 ' + Math.max(1, Math.round(len / 400)) + ' 分钟读完';
+            };
+            content.addEventListener('input', update);
+            update();
+        }
+        // Ctrl/Cmd + S 保存
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                document.getElementById('post-form').requestSubmit();
+            }
+        });
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,252 @@
+{% extends 'blog/base.html' %}
+{% load static blog_extras %}
+
+{% block title %}{{ post.title }} - 我的博客{% endblock %}
+{% block description %}{{ post.display_excerpt|truncatechars:120 }}{% endblock %}
+
+{% block progress %}<div class="read-progress"></div>{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'index' %}">首页</a>
+    <span class="sep">/</span>
+    {% if post.category %}
+        <a href="{% url 'index' %}?category={{ post.category.id }}">{{ post.category.name }}</a>
+        <span class="sep">/</span>
+    {% endif %}
+    <span class="truncate" style="max-width: 320px;">{{ post.title }}</span>
+</div>
+
+<article class="article">
+    <header class="article-head">
+        <h1 class="article-title">{{ post.title }}</h1>
+
+        <div class="article-meta">
+            <a class="author-link" href="{% url 'user_profile' post.author.username %}">
+                {% include 'blog/partials/avatar.html' with profile=post.author.profile size='avatar-sm' %}
+                <span>
+                    {{ post.author.first_name|default:post.author.username }}
+                    {% if post.author.profile.bio %}
+                    <span class="text-xs text-3" style="display: block; font-weight: 500;">{{ post.author.profile.bio|truncatechars:30 }}</span>
+                    {% endif %}
+                </span>
+            </a>
+            <span class="m" title="{{ post.created|date:'Y-m-d H:i:s' }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                {{ post.created|date:"Y-m-d H:i" }}
+            </span>
+            <span class="m">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                {{ post.views|humanize_count }} 阅读
+            </span>
+            <span class="m">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                {{ post.reading_minutes }} 分钟
+            </span>
+            {% if post.status == 'draft' %}
+                <span class="badge badge-warning">草稿（仅自己可见）</span>
+            {% endif %}
+            {% if user == post.author %}
+                <span class="flex gap-6" style="margin-left: auto;">
+                    <a href="{% url 'post_edit' post.id %}" class="btn btn-ghost btn-sm">✏️ 编辑</a>
+                    <a href="{% url 'post_delete' post.id %}" class="btn btn-danger btn-sm"
+                       onclick="return confirm('确定删除此文章吗？此操作不可恢复。');">🗑 删除</a>
+                </span>
+            {% endif %}
+        </div>
+
+        {% if post.tags.all %}
+        <div class="tag-cloud" style="margin-top: 14px;">
+            {% for tag in post.tags.all %}
+                <a class="tag-chip" href="{{ tag.get_absolute_url }}"># {{ tag.name }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </header>
+
+    <div class="markdown-body">
+        {{ post.html_content|safe }}
+    </div>
+
+    <div class="post-actions">
+        <button type="button" class="action-btn js-vote {% if user_vote == 1 %}active active-like{% endif %}"
+                data-url="{% url 'post_vote' post.id %}" data-value="1" title="点赞这篇文章">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 22V11l5-9a2 2 0 0 1 2 2v5h5.5a2 2 0 0 1 2 2.3l-1.3 8a2 2 0 0 1-2 1.7z"/><path d="M2 12h5v10H2z"/></svg>
+            点赞 <span class="n">{{ post.like_count|humanize_count }}</span>
+        </button>
+
+        <button type="button" class="action-btn js-vote {% if user_vote == -1 %}active active-dislike{% endif %}"
+                data-url="{% url 'post_vote' post.id %}" data-value="-1" title="踩一下">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(180deg);"><path d="M7 22V11l5-9a2 2 0 0 1 2 2v5h5.5a2 2 0 0 1 2 2.3l-1.3 8a2 2 0 0 1-2 1.7z"/><path d="M2 12h5v10H2z"/></svg>
+            踩 <span class="n">{{ post.dislike_count|humanize_count }}</span>
+        </button>
+
+        <button type="button" class="action-btn js-bookmark {% if is_bookmarked %}active{% endif %}"
+                data-url="{% url 'post_bookmark' post.id %}" title="收藏这篇文章">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            收藏 <span class="n">{{ post.bookmark_count|humanize_count }}</span>
+        </button>
+
+        <button type="button" class="action-btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(location.href).then(function(){window.DjangoBlog.toast('文章链接已复制')})" title="复制链接">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+            分享
+        </button>
+    </div>
+</article>
+
+<div class="author-card">
+    {% include 'blog/partials/avatar.html' with profile=post.author.profile size='avatar-lg' %}
+    <div class="info">
+        <div class="name">
+            <a href="{% url 'user_profile' post.author.username %}">{{ post.author.first_name|default:post.author.username }}</a>
+            {% if user == post.author %}<span class="badge badge-brand">就是我</span>{% endif %}
+        </div>
+        <div class="bio">{{ post.author.profile.bio|default:"这个人很懒，什么都没写～" }}</div>
+    </div>
+    <div class="counts">
+        <div><b>{{ post.author.posts.count }}</b>文章</div>
+    </div>
+    <a href="{% url 'user_profile' post.author.username %}" class="btn btn-outline btn-sm">查看主页</a>
+</div>
+
+{% if related_posts %}
+<div class="card mt-16">
+    <div class="card-head"><h3>📚 相关文章</h3></div>
+    <div class="card-body">
+        <div class="flex" style="flex-direction: column; gap: 4px;">
+            {% for rp in related_posts %}
+            <a class="rank-item" href="{{ rp.get_absolute_url }}" style="align-items: center;">
+                <span class="rank-no" style="background: var(--brand-light); color: var(--brand);">{{ forloop.counter }}</span>
+                <span style="min-width: 0; flex: 1;">
+                    <span class="rank-title">{{ rp.title }}</span>
+                    <span class="rank-sub">👁 {{ rp.views|humanize_count }} · 💬 {{ rp.comment_count|humanize_count }} · {{ rp.created|date:"Y-m-d" }}</span>
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div id="comments"
+     data-url="{% url 'post_detail' post.id %}"
+     data-sort="{{ comment_sort }}"
+     data-rendered="1">
+    {% include 'blog/partials/comment_list.html' %}
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<aside class="side">
+    <div class="widget toc-widget">
+        <div class="widget-head">📑 目录</div>
+        <div class="widget-body">
+            <div class="toc-list" id="toc-list">
+                <div class="text-xs text-3" style="padding: 8px;">正在生成目录…</div>
+            </div>        </div>
+    </div>
+
+    <div class="widget">
+        <div class="widget-head">✍️ 关于作者</div>
+        <div class="widget-body" style="padding: 16px;">
+            <div class="flex items-center gap-14">
+                {% include 'blog/partials/avatar.html' with profile=post.author.profile size='avatar-lg' %}
+                <div style="min-width: 0;">
+                    <div class="bold truncate">{{ post.author.first_name|default:post.author.username }}</div>
+                    <div class="text-xs text-3 truncate">@{{ post.author.username }}</div>
+                </div>
+            </div>
+            <p class="text-sm text-2 mt-16" style="margin-bottom: 12px;">
+                {{ post.author.profile.bio|default:"这个人很懒，什么都没写～" }}
+            </p>
+            <a href="{% url 'user_profile' post.author.username %}" class="btn btn-ghost btn-sm btn-block">查看 TA 的主页</a>
+        </div>
+    </div>
+
+    {% if hot_posts %}
+    <div class="widget">
+        <div class="widget-head">🔥 热门文章</div>
+        <div class="widget-body">
+            <ol class="rank-list">
+                {% for p in hot_posts %}
+                <li>
+                    <a class="rank-item" href="{{ p.get_absolute_url }}">
+                        <span class="rank-no">{{ forloop.counter }}</span>
+                        <span style="min-width: 0;">
+                            <span class="rank-title">{{ p.title }}</span>
+                            <span class="rank-sub">👁 {{ p.views|humanize_count }}</span>
+                        </span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if post.tags.all %}
+    <div class="widget">
+        <div class="widget-head">🏷️ 本文标签</div>
+        <div class="widget-body">
+            <div class="tag-cloud">
+                {% for tag in post.tags.all %}
+                    <a class="tag-chip" href="{{ tag.get_absolute_url }}">{{ tag.name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</aside>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 由文章正文的标题自动生成目录（Markdown 的 toc 扩展已经给标题加了 id）
+    (function () {
+        var body = document.querySelector('.markdown-body');
+        var mount = document.getElementById('toc-list');
+        if (!body || !mount) return;
+        var heads = body.querySelectorAll('h2, h3, h4');
+        if (!heads.length) {
+            mount.innerHTML = '<div class="text-xs text-3" style="padding: 8px;">本文没有小节标题</div>';
+            return;
+        }
+        var html = '<ul class="toc-list">';
+        heads.forEach(function (h) {
+            if (!h.id) {
+                h.id = 'h-' + Math.random().toString(36).slice(2, 8);
+            }
+            var level = h.tagName === 'H2' ? 0 : (h.tagName === 'H3' ? 1 : 2);
+            html += '<li style="padding-left:' + (level * 12) + 'px;">'
+                 + '<a href="#' + h.id + '">' + h.textContent.replace(/¶/g, '').trim() + '</a></li>';
+        });
+        html += '</ul>';
+        mount.innerHTML = html;
+        // 目录滚动高亮（重复调用 initToc 的逻辑，这里直接实现一份）
+        var links = mount.querySelectorAll('a');
+        var onScroll = function () {
+            var active = null;
+            heads.forEach(function (h) {
+                if (h.getBoundingClientRect().top <= 130) active = h.id;
+            });
+            links.forEach(function (a) {
+                a.classList.toggle('active', a.getAttribute('href') === '#' + active);
+            });
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    })();
+
+    // 评论锚点：从通知跳进来时高亮目标评论
+    (function () {
+        if (!location.hash || location.hash.indexOf('#comment-') !== 0) return;
+        var el = document.querySelector(location.hash);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.transition = 'background .6s';
+        el.style.background = 'var(--brand-light)';
+        el.style.borderRadius = 'var(--radius-sm)';
+        setTimeout(function () { el.style.background = ''; }, 2200);
+    })();
+</script>
+{% endblock %}

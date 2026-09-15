@@ -1,0 +1,20 @@
+# DjangoBlog dependencies
+#
+# Install:
+#     pip install -r requirements.txt
+#
+# Verified on Python 3.9.10 + Django 4.2.16 (88 unit tests + 75 HTTP smoke checks).
+# NOTE: keep this file pure ASCII. pip falls back to the system locale codec
+# (GBK on Chinese Windows) when a requirements file has no BOM, so a UTF-8
+# file containing Chinese comments fails with UnicodeDecodeError.
+
+# ---- core ----
+Django==4.2.16
+PyMySQL==1.1.1            # pure-python MySQL driver, no compiler needed
+Pillow==11.3.0            # required by ImageField (avatar / cover / comment image)
+
+# ---- markdown rendering and sanitizing ----
+Markdown==3.5.2           # Markdown -> HTML (code highlighting via codehilite)
+bleach==6.1.0             # HTML whitelist filtering (XSS protection)
+tinycss2==1.4.0           # bleach CSS sanitizer dependency, must be installed explicitly
+Pygments==2.19.2          # syntax highlighting for fenced code blocks

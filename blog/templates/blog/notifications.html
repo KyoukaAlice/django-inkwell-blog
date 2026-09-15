@@ -1,0 +1,158 @@
+{% extends 'blog/base.html' %}
+{% load static blog_extras %}
+{% comment %}
+通知中心：按类型筛选 + 无刷新标记已读（JS 不可用时回退为普通表单 POST）
+上下文（blog.views.notifications）：
+    notifications / page_obj  Notification 的 Page
+    kind                      'all' 或某个类型 key
+    unread                    未读数量
+    type_choices              Notification.TYPE_CHOICES
+{% endcomment %}
+
+{% block title %}我的通知 - 我的博客{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-bar">
+        <div>
+            <h1>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                我的通知
+            </h1>
+            <p><span id="unread-count">{{ unread }}</span> 条未读</p>
+        </div>
+
+        {# 全部已读是 POST-only 视图 #}
+        <form method="post" action="{% url 'notification_read' %}">
+            {% csrf_token %}
+            <input type="hidden" name="all" value="1">
+            <button type="submit" class="btn btn-ghost btn-sm js-notif-read" data-all="1"{% if not unread %} disabled{% endif %}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+                全部标记为已读
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="tabs">
+    <a href="?kind=all" class="{% if kind == 'all' %}active{% endif %}">全部</a>
+    {% for value, label in type_choices %}
+        <a href="?kind={{ value }}" class="{% if kind == value %}active{% endif %}">{{ label }}</a>
+    {% endfor %}
+</div>
+
+<div class="card">
+    {% if notifications %}
+        <div class="notif-list">
+            {% for n in notifications %}
+                <div class="notif-row{% if not n.is_read %} unread{% endif %}" data-id="{{ n.id }}">
+                    <span class="ico">{{ n.icon }}</span>
+
+                    <div class="body">
+                        <div class="txt">{{ n.summary }}</div>
+
+                        {% if n.text and n.kind != 'system' %}
+                            {# summary 只说明「谁做了什么」，这里补上评论/回复的具体内容 #}
+                            <div class="text-xs text-3" style="margin-top: 3px;">「{{ n.text|emoticons }}」</div>
+                        {% endif %}
+
+                        {% if n.comment %}
+                            <div class="quote">{{ n.comment.content|emoticons|truncatechars:90 }}</div>
+                        {% endif %}
+
+                        <time title="{{ n.created|date:'Y-m-d H:i' }}">{{ n.created|time_ago }}</time>
+                    </div>
+
+                    <div class="act gap-6">
+                        <a class="btn btn-ghost btn-sm" href="{{ n.get_absolute_url }}">查看</a>
+
+                        {% if not n.is_read %}
+                            <form method="post" action="{% url 'notification_read' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="single" value="{{ n.id }}">
+                                <button type="submit" class="btn btn-outline btn-sm js-notif-read" data-id="{{ n.id }}">标记已读</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card-body">
+            <div class="empty">
+                <div class="ico">🔔</div>
+                <h3>暂时没有通知</h3>
+                <p>{% if kind == 'all' %}等有人评论、回复或点赞时，消息会出现在这里。{% else %}这个类型下还没有通知，换个分类看看吧。{% endif %}</p>
+                <a class="btn btn-outline btn-sm" href="{% url 'index' %}">返回首页</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% include 'blog/partials/pagination.html' with page_obj=page_obj %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* 通知已读：优先 AJAX 无刷新，失败时按钮仍可作为普通表单提交 */
+(function () {
+    'use strict';
+
+    var READ_URL = "{% url 'notification_read' %}";
+
+    function setUnread(count) {
+        var counter = document.getElementById('unread-count');
+        if (counter) counter.textContent = count;
+
+        var dot = document.getElementById('notif-dot');
+        if (dot) {
+            if (count > 0) {
+                dot.textContent = count > 99 ? '99+' : count;
+                dot.classList.remove('hidden');
+            } else {
+                dot.classList.add('hidden');
+            }
+        }
+
+        if (count === 0) {
+            var all = document.querySelector('.js-notif-read[data-all]');
+            if (all) all.disabled = true;
+        }
+    }
+
+    document.addEventListener('click', function (event) {
+        var btn = event.target && event.target.closest
+            ? event.target.closest('.js-notif-read')
+            : null;
+        if (!btn || btn.disabled) return;
+
+        // 交给 fetch 处理，阻止表单默认提交（无 JS 时表单照常工作）
+        event.preventDefault();
+
+        var row = btn.closest('.notif-row');
+        var payload = btn.dataset.all ? { all: 1 } : { single: btn.dataset.id };
+        btn.disabled = true;
+
+        window.DjangoBlog.post(READ_URL, payload).then(function (res) {
+            if (btn.dataset.all) {
+                Array.prototype.forEach.call(document.querySelectorAll('.notif-row.unread'), function (el) {
+                    el.classList.remove('unread');
+                });
+                Array.prototype.forEach.call(document.querySelectorAll('.js-notif-read[data-id]'), function (el) {
+                    el.remove();
+                });
+            } else if (row) {
+                row.classList.remove('unread');
+                btn.remove();
+            }
+            setUnread(typeof res.unread === 'number' ? res.unread : 0);
+        }).catch(function (err) {
+            btn.disabled = false;
+            if (window.DjangoBlog && window.DjangoBlog.toast) {
+                window.DjangoBlog.toast(err.message || '操作失败，请稍后重试', 'err');
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

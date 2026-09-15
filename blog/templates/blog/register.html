@@ -1,0 +1,78 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+{% comment %}注册页：独立全屏卡片布局{% endcomment %}
+
+{% block title %}注册 - 我的博客{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <div class="mark">✨</div>
+            <h1>创建账号</h1>
+            <p>加入我们，开始记录与分享</p>
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                <span>⚠️</span>
+                <span>
+                    {% for error in form.non_field_errors %}{{ error }}<br>{% endfor %}
+                </span>
+            </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label" for="id_username">用户名 <span style="color: var(--danger);">*</span></label>
+                <input type="text" name="username" id="id_username" class="form-control"
+                       placeholder="3-150 个字符，字母 / 数字 / @ . + - _"
+                       value="{{ form.username.value|default:'' }}" required autofocus
+                       autocomplete="username">
+                {% if form.username.errors %}
+                    <ul class="form-error">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_email">邮箱（可选）</label>
+                <input type="email" name="email" id="id_email" class="form-control"
+                       placeholder="you@example.com" value="{{ form.email.value|default:'' }}"
+                       autocomplete="email">
+                {% if form.email.errors %}
+                    <ul class="form-error">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_password1">密码 <span style="color: var(--danger);">*</span></label>
+                <input type="password" name="password1" id="id_password1" class="form-control"
+                       placeholder="至少 8 位，别用纯数字" required autocomplete="new-password">
+                {% if form.password1.errors %}
+                    <ul class="form-error">{% for e in form.password1.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+                <span class="form-hint">密码不能与用户名太相似，也不能是常见密码。</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_password2">确认密码 <span style="color: var(--danger);">*</span></label>
+                <input type="password" name="password2" id="id_password2" class="form-control"
+                       placeholder="请再次输入密码" required autocomplete="new-password">
+                {% if form.password2.errors %}
+                    <ul class="form-error">{% for e in form.password2.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block">注册并登录</button>
+        </form>
+
+        <div class="auth-foot">
+            已有账号？<a href="{% url 'login' %}">直接登录 →</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block sidebar %}{% endblock %}

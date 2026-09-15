@@ -1,0 +1,106 @@
+{% load blog_extras %}
+{% comment %}
+单条评论（一级楼层 + 楼中楼回复）
+参数：comment（CommentNode）、is_root（是否一级楼层）、parent_id / parent_floor（回复时用）
+{% endcomment %}
+<div class="comment {% if not is_root %}is-reply{% endif %}{% if extra_hidden %} reply-extra hidden{% endif %}"
+     id="comment-{{ comment.id }}"
+     data-id="{{ comment.id }}"
+     {% if is_root %}data-root="{{ comment.id }}"{% endif %}>
+
+    {% if comment.avatar %}
+        <img class="avatar {% if not is_root %}avatar-sm{% endif %}" src="{{ comment.avatar }}" alt="{{ comment.author_name }}" loading="lazy">
+    {% else %}
+        <span class="avatar {% if not is_root %}avatar-sm{% endif %}"
+              style="background: {{ comment.avatar_color }};">{{ comment.avatar_letter }}</span>
+    {% endif %}
+
+    <div class="comment-main">
+        <div class="comment-name">
+            <a href="{% url 'user_profile' comment.author_name %}">{{ comment.author_name }}</a>
+            {% if comment.is_post_author %}<span class="up-badge">UP主</span>{% endif %}
+            {% if comment.is_author %}<span class="badge">我</span>{% endif %}
+            {% if is_root %}
+                <span class="floor">#{{ comment.floor }} · {{ comment.created|time_ago }}</span>
+            {% else %}
+                <span class="floor">{{ comment.created|time_ago }}</span>
+            {% endif %}
+        </div>
+
+        <div class="comment-text {% if comment.is_deleted %}muted{% endif %} {% if comment.is_emoji_only %}emoji-only{% endif %}">
+            {% if comment.reply_to and comment.reply_to != comment.author_name %}
+                <a class="reply-at" href="#comment-{{ comment.id }}"
+                   data-author="{{ comment.reply_to }}"
+                   data-parent="{% if is_root %}{{ comment.id }}{% else %}{{ parent_id }}{% endif %}">@{{ comment.reply_to }}</a>
+            {% endif %}
+            {{ comment.content_html|safe }}
+        </div>
+
+        {% if comment.image_url %}
+        <div class="comment-image">
+            <img src="{{ comment.image_url }}" alt="评论配图" loading="lazy">
+        </div>
+        {% endif %}
+
+        <div class="comment-foot">
+            <button type="button" class="cf js-comment-like {% if comment.liked %}liked{% endif %}"
+                    data-url="{% url 'comment_like' comment.id %}" title="点赞这条评论">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8z"/>
+                </svg>
+                <span class="n">{{ comment.likes }}</span>
+            </button>
+
+            {% if user.is_authenticated and not comment.is_deleted %}
+            <button type="button" class="cf js-reply"
+                    data-author="{{ comment.author_name }}"
+                    data-parent="{% if is_root %}{{ comment.id }}{% else %}{{ parent_id }}{% endif %}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17l-6-5 6-5"/><path d="M3 12h10a6 6 0 0 1 6 6v2"/></svg>
+                回复
+            </button>
+            {% endif %}
+
+            {% if comment.is_author or user == post.author %}
+                {% if not comment.is_deleted %}
+                <button type="button" class="cf danger js-comment-delete" data-url="{% url 'comment_delete' comment.id %}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                    删除
+                </button>
+                {% endif %}
+            {% endif %}
+
+            {% if comment.like_users %}
+            <span class="liked-users" title="{{ comment.like_users|join:'、' }} 觉得很赞">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+                <span class="who">{{ comment.like_users|slice:":2"|join:"、" }}{% if comment.like_users|length > 2 %} 等 {{ comment.likes }} 人{% else %} 觉得很赞{% endif %}</span>
+            </span>
+            {% endif %}
+        </div>
+
+        {% if is_root %}
+            {% with reply_list=replies|get_item:comment.id more=reply_more|get_item:comment.id %}
+                {% if reply_list %}
+                <div class="replies">
+                    {% for reply in reply_list %}
+                        {% comment %}
+                        前 COMMENT_REPLY_PREVIEW 条直接展示，其余加 .reply-extra.hidden,
+                        点「展开另外 N 条回复」时由前端一次性显示，无需再请求服务器。
+                        {% endcomment %}
+                        {% if forloop.counter > 3 %}
+                            {% include 'blog/partials/comment_item.html' with comment=reply is_root=False parent_id=comment.id parent_floor=comment.floor extra_hidden=True %}
+                        {% else %}
+                            {% include 'blog/partials/comment_item.html' with comment=reply is_root=False parent_id=comment.id parent_floor=comment.floor %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if more %}
+                <button type="button" class="reply-more" data-root="{{ comment.id }}" data-parent="{{ comment.id }}">
+                    展开另外 {{ more }} 条回复
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+    </div>
+</div>

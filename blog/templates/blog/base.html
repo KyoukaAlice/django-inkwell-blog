@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0aa7e0">
+    <title>{% block title %}我的博客{% endblock %}</title>
+    <meta name="description" content="{% block description %}一个基于 Django 的个人博客系统：文章、标签、评论互动与数据统计。{% endblock %}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+    <script>
+        // 提前应用主题，避免深色模式下的白色闪屏
+        (function () {
+            var saved = localStorage.getItem('djangoblog-theme');
+            if (!saved) {
+                saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                    ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+</head>
+<body>
+{% block progress %}{% endblock %}
+
+<header class="header">
+    <div class="header-inner">
+        <a href="{% url 'index' %}" class="logo">
+            <span class="logo-mark">📝</span>
+            <span>我的博客<small>Django 博客系统</small></span>
+        </a>
+
+        <button class="icon-btn menu-toggle" title="菜单" aria-label="展开菜单">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+
+        <nav class="nav">
+            <a href="{% url 'index' %}" class="{% if request.resolver_match.url_name == 'index' %}active{% endif %}">首页</a>
+            <a href="{% url 'tag_cloud' %}" class="{% if request.resolver_match.url_name == 'tag_cloud' %}active{% endif %}">标签</a>
+            <a href="{% url 'about' %}" class="{% if request.resolver_match.url_name == 'about' %}active{% endif %}">关于</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'post_create' %}" class="{% if request.resolver_match.url_name == 'post_create' %}active{% endif %}">写文章</a>
+                <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">个人中心</a>
+            {% endif %}
+        </nav>
+
+        <div class="header-actions">
+            <form class="search-mini hide-sm" method="get" action="{% url 'search' %}" role="search">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input type="search" name="keyword" placeholder="搜索文章…" value="{{ keyword|default:'' }}" aria-label="搜索">
+            </form>
+
+            <button class="icon-btn theme-toggle" title="切换主题" aria-label="切换深色/浅色模式"></button>
+
+            {% if user.is_authenticated %}
+                <div class="notif-wrap" style="position: relative;">
+                    <button class="icon-btn" data-dropdown="#notif-panel" title="通知" aria-label="通知">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                        <span class="dot {% if not unread_notifications %}hidden{% endif %}" id="notif-dot">{{ unread_notifications }}</span>
+                    </button>
+                    {% include 'blog/partials/notif_panel.html' %}
+                </div>
+
+                <div class="user-menu">
+                    <button class="user-btn" data-dropdown="#user-dropdown">
+                        {% include 'blog/partials/avatar.html' with profile=user.profile size='avatar-xs' %}
+                        <span class="hide-sm">{{ user.first_name|default:user.username }}</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="dropdown" id="user-dropdown">
+                        <div class="dropdown-head">
+                            <strong>{{ user.first_name|default:user.username }}</strong>
+                            <span>@{{ user.username }}</span>
+                        </div>
+                        <a href="{% url 'user_profile' user.username %}">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            我的主页
+                        </a>
+                        <a href="{% url 'profile' %}">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                            个人中心
+                        </a>
+                        <a href="{% url 'post_create' %}">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                            写新文章
+                        </a>
+                        <a href="{% url 'notifications' %}">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                            我的通知{% if unread_notifications %} <span class="badge badge-danger">{{ unread_notifications }}</span>{% endif %}
+                        </a>
+                        <a href="{% url 'profile_edit' %}">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 7 2.6h.1A1.6 1.6 0 0 0 8.2 1V1a2 2 0 1 1 4 0v.1"/></svg>
+                            编辑资料
+                        </a>
+                        {% if user.is_staff %}
+                        <a href="{% url 'admin:index' %}">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6z"/></svg>
+                            后台管理
+                        </a>
+                        {% endif %}
+                        <hr>
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="danger">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+                                退出登录
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-ghost btn-sm">登录</a>
+                <a href="{% url 'register' %}" class="btn btn-primary btn-sm hide-sm">注册</a>
+            {% endif %}
+        </div>
+    </div>
+</header>
+
+{% block body %}
+<div class="wrap">
+    <main class="main">
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
+                        <span>{% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}⚠️{% elif message.tags == 'warning' %}⚡{% else %}ℹ️{% endif %}</span>
+                        <span>{{ message }}</span>
+                        <button class="close" type="button" title="关闭">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block sidebar %}
+    <aside class="side">
+        {% include 'blog/partials/sidebar.html' %}
+    </aside>
+    {% endblock %}
+</div>
+{% endblock %}
+
+<footer class="footer">
+    <div class="footer-inner">
+        <div>
+            <strong style="color: var(--text-2);">📝 我的博客</strong>
+            <span> · 基于 Django {{ django_version|default:"4.2" }} 构建 · 分享思考与成长</span>
+        </div>
+        <div class="footer-links">
+            <a href="{% url 'index' %}">首页</a>
+            <a href="{% url 'tag_cloud' %}">标签</a>
+            <a href="{% url 'about' %}">关于本站</a>
+            {% if user.is_authenticated %}<a href="{% url 'notifications' %}">通知</a>{% endif %}
+            <span>&copy; {% now "Y" %} All rights reserved.</span>
+        </div>
+    </div>
+</footer>
+
+<script>window.DJANGO_BLOG = { notifPollUrl: "{% url 'notification_poll' %}" };</script>
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

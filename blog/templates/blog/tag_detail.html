@@ -1,0 +1,52 @@
+{% extends 'blog/base.html' %}
+{% load static blog_extras %}
+{% comment %}
+标签归档页：某个标签下的全部文章
+视图上下文：tag、posts(=page_obj)、page_obj
+{% endcomment %}
+
+{% block title %}#{{ tag.name }} - 我的博客{% endblock %}
+{% block description %}标签「{{ tag.name }}」下的全部文章，共 {{ page_obj.paginator.count }} 篇。{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'index' %}">首页</a>
+    <span class="sep">/</span>
+    <a href="{% url 'tag_cloud' %}">标签</a>
+    <span class="sep">/</span>
+    <span># {{ tag.name }}</span>
+</div>
+
+{% comment %}标签信息卡{% endcomment %}
+<div class="card mb-16">
+    <div class="card-body">
+        <div class="flex items-center justify-between wrap-gap gap-14">
+            <div>
+                <h1 style="margin-bottom: 6px;">
+                    <span style="color: var(--brand);">#</span> {{ tag.name }}
+                </h1>
+                <p class="text-3 text-sm mb-0">共 {{ page_obj.paginator.count }} 篇文章 · 按发布时间排序</p>
+            </div>
+            <a href="{% url 'tag_cloud' %}" class="btn btn-outline btn-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0l-7-7A2 2 0 0 1 3 12.2V5a2 2 0 0 1 2-2h7.2a2 2 0 0 1 1.4.6l7 7a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>
+                全部标签
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="post-list">
+    {% for post in posts %}
+        {% include 'blog/partials/post_card.html' with post=post %}
+    {% empty %}
+    <div class="empty">
+        <div class="ico">🗂️</div>
+        <h3>该标签下还没有文章</h3>
+        <p>换个标签看看，或者浏览全部标签找到感兴趣的内容。</p>
+        <a href="{% url 'tag_cloud' %}" class="btn btn-primary">浏览全部标签</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% include 'blog/partials/pagination.html' with page_obj=page_obj %}
+{% endblock %}

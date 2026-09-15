@@ -1,0 +1,93 @@
+{% load static blog_extras %}
+{% comment %}
+评论区主体（AJAX 局部刷新目标，id="comments"）
+上下文：post, roots, replies, reply_more, reply_counts, page_obj, total, sort, emoticons, form
+{% endcomment %}
+<div class="comments-head">
+    <h3>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-7.6-4.2L3 21l1.3-3.9A8.5 8.5 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg>
+        评论
+    </h3>
+    <span class="count">{{ total }} 条评论</span>
+    <div class="comments-sort">
+        <button type="button" data-sort="hot" class="{% if comment_sort == 'hot' %}active{% endif %}">🔥 最热</button>
+        <button type="button" data-sort="new" class="{% if comment_sort == 'new' %}active{% endif %}">🕒 最新</button>
+    </div>
+</div>
+
+{% if user.is_authenticated %}
+<div class="editor">
+    <div class="editor-inner">
+        {% include 'blog/partials/avatar.html' with profile=user.profile size='avatar' %}
+        <div class="editor-main">
+            <div id="reply-hint-mount"></div>
+            <form id="comment-form" method="post" action="{% url 'comment_create' post.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.parent_id }}
+                <div class="editor-box">
+                    <textarea name="content" id="comment-editor" rows="3" maxlength="1000"
+                              placeholder="发一条友善的评论吧～ 也可以点击「回复」参与楼中楼讨论"></textarea>
+                    <div class="editor-toolbar">
+                        <button type="button" class="tb" data-emoji-toggle title="插入表情">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.6" stroke-linecap="round"/></svg>
+                        </button>
+                        <label class="tb" title="上传配图（≤5MB）" style="cursor: pointer;">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            <input type="file" name="image" class="comment-image-input hidden" accept="image/*">
+                        </label>
+                        <span class="spacer"></span>
+                        <span class="editor-count" data-max="1000">0 / 1000</span>
+                    </div>
+                </div>
+                <div class="editor-foot">
+                    <span class="text-xs text-3">
+                        <kbd style="background: var(--surface-3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;">Ctrl</kbd> +
+                        <kbd style="background: var(--surface-3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;">Enter</kbd> 快速发送
+                    </span>
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
+                        发送评论
+                    </button>
+                </div>
+            </form>
+            <div class="emoji-panel">
+                {% for code, item in emoticons.items %}
+                    <img src="{% static 'img/emoticons/' %}{{ code }}.svg" data-code="[em:{{ code }}]" alt="{{ item.0 }}" title="{{ item.1 }}" loading="lazy">
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="editor">
+    <div class="alert alert-info" style="margin: 0;">
+        <span>🔒</span>
+        <span>请先 <a href="{% url 'login' %}?next={{ request.path }}">登录</a> 后参与评论，还没有账号？
+            <a href="{% url 'register' %}">立即注册</a>
+        </span>
+    </div>
+</div>
+{% endif %}
+
+<div class="comment-list" id="comment-list">
+    {% for comment in roots %}
+        {% include 'blog/partials/comment_item.html' with comment=comment is_root=True %}
+    {% empty %}
+        <div class="comments-empty">
+            <div class="ico">💬</div>
+            <p style="margin: 0;">还没有人评论，快来抢占沙发吧～</p>
+        </div>
+    {% endfor %}
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="comments-more" style="padding-bottom: 20px;">
+    {% if page_obj.has_previous %}
+        <button type="button" class="js-comment-page" data-page="{{ page_obj.previous_page_number }}" data-sort="{{ comment_sort }}">← 上一页</button>
+    {% endif %}
+    <span class="text-xs text-3" style="padding: 0 10px;">第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+    {% if page_obj.has_next %}
+        <button type="button" class="js-comment-page" data-page="{{ page_obj.next_page_number }}" data-sort="{{ comment_sort }}">下一页 →</button>
+    {% endif %}
+</div>
+{% endif %}

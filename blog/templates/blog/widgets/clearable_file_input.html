@@ -1,0 +1,32 @@
+{% comment %}
+自定义文件控件模板（blog.forms.AvatarPreviewWidget / forms.ClearableFileInput 使用）
+- 已有文件时：显示缩略图预览 + 「当前：查看」 + 「清除」勾选框
+- 所有变量都用 {% if %} 保护，绑定 / 未绑定表单都能安全渲染
+命名说明：ClearableFileInput.get_context() 放进上下文的是 checkbox_name / checkbox_id
+（由 clear_checkbox_name() / clear_checkbox_id() 派生），这里用 {% firstof %} 做兜底，
+两种写法都能拿到正确的 name / id，保证文件字段的「清除」逻辑不被破坏。
+（注意：过滤器的参数是「急切求值」的，写 {{ x|default:widget.clear_checkbox_id }}
+ 会在变量不存在时抛 VariableDoesNotExist，所以必须用 firstof。）
+{% endcomment %}
+{% firstof widget.checkbox_name widget.clear_checkbox_name as cb_name %}
+{% firstof widget.checkbox_id widget.clear_checkbox_id as cb_id %}
+{% if widget.is_initial %}
+    {% if widget.value %}
+    <div class="flex items-center gap-14 wrap-gap" style="margin-bottom: 10px;">
+        {% if widget.value.url %}
+            <img src="{{ widget.value.url }}" alt="当前文件预览" style="max-height: 90px; width: auto; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+        {% endif %}
+        <div class="text-xs text-3">
+            当前：<a href="{{ widget.value.url }}" target="_blank" rel="noopener">查看</a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not widget.required %}
+    <label class="checkbox-line" for="{{ cb_id }}" style="margin-bottom: 10px;">
+        <input type="checkbox" name="{{ cb_name }}" id="{{ cb_id }}"{% if widget.attrs.disabled %} disabled{% endif %}>
+        <span>{{ widget.clear_checkbox_label|default:"清除" }}</span>
+    </label>
+    {% endif %}
+{% endif %}
+<input type="{{ widget.type }}" name="{{ widget.name }}"{% if widget.value %} value="{{ widget.value }}"{% endif %}{% for name, value in widget.attrs.items %}{% if value is not False %}{% if value is not True %} {{ name }}="{{ value }}"{% else %} {{ name }}{% endif %}{% endif %}{% endfor %}>

@@ -1,0 +1,50 @@
+{% extends 'blog/base.html' %}
+{% load static blog_extras %}
+{% comment %}
+404 页面（blog.views.page_not_found）
+hot_posts 由上下文处理器 site_context 全局注入，这里做了空值保护。
+{% endcomment %}
+
+{% block title %}页面不存在 - 我的博客{% endblock %}
+
+{% block content %}
+<div class="empty" style="padding: 64px 24px;">
+    <div class="ico" style="font-size: 3.6rem;">🧭</div>
+    <h1 style="font-size: 2.6rem; letter-spacing: -1px; color: var(--text-2); margin-bottom: 4px;">404</h1>
+    <h3>页面走丢了</h3>
+    <p>你访问的页面不存在，或者已经被删除了。<br>检查一下网址，或者从下面这些入口继续逛。</p>
+
+    <div class="flex items-center wrap-gap" style="justify-content: center; gap: 12px;">
+        <a class="btn btn-primary" href="{% url 'index' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+            返回首页
+        </a>
+        <a class="btn btn-outline" href="{% url 'search' %}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            搜索文章
+        </a>
+    </div>
+</div>
+
+{% if hot_posts %}
+<div class="card mt-24">
+    <div class="card-head">
+        <h3>🔥 热门文章</h3>
+        <a class="more" href="{% url 'index' %}">更多 →</a>
+    </div>
+    <div class="card-body">
+        <div class="rank-list">
+            {% for post in hot_posts %}
+                <a class="rank-item" href="{{ post.get_absolute_url }}">
+                    <span class="rank-no">{{ forloop.counter }}</span>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="rank-title">{{ post.title }}</div>
+                        <div class="rank-sub">阅读 {{ post.views|humanize_count }} · 点赞 {{ post.like_count|humanize_count }} · 评论 {{ post.comment_count|humanize_count }}</div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

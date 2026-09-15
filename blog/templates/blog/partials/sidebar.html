@@ -1,0 +1,101 @@
+{% load blog_extras %}
+{% comment %}侧边栏：作者名片 + 站点数据 + 热门文章 + 标签 + 分类{% endcomment %}
+
+{% if user.is_authenticated %}
+<div class="widget">
+    <div class="widget-body" style="padding: 16px;">
+        <div class="flex items-center gap-14" style="margin-bottom: 14px;">
+            {% include 'blog/partials/avatar.html' with profile=user.profile size='avatar-lg' %}
+            <div style="min-width: 0;">
+                <div class="bold truncate">{{ user.first_name|default:user.username }}</div>
+                <div class="text-xs text-3 truncate">@{{ user.username }}</div>
+            </div>
+        </div>
+        <div class="flex gap-10">
+            <a href="{% url 'post_create' %}" class="btn btn-primary btn-sm" style="flex: 1;">✏️ 写文章</a>
+            <a href="{% url 'profile' %}" class="btn btn-ghost btn-sm" style="flex: 1;">个人中心</a>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="widget">
+    <div class="widget-body" style="padding: 18px;">
+        <h3 style="font-size: 1rem; margin-bottom: 8px;">👋 欢迎来到我的博客</h3>
+        <p class="text-sm text-3" style="margin-bottom: 14px;">登录后即可点赞、收藏、发表评论，和作者一起交流。</p>
+        <div class="flex gap-10">
+            <a href="{% url 'login' %}" class="btn btn-primary btn-sm" style="flex: 1;">登录</a>
+            <a href="{% url 'register' %}" class="btn btn-outline btn-sm" style="flex: 1;">注册</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="widget">
+    <div class="widget-head">📊 站点数据</div>
+    <div class="stat-grid">
+        <div class="stat-box">
+            <div class="v">{{ nav_stats.posts }}</div>
+            <div class="k">篇文章</div>
+        </div>
+        <div class="stat-box">
+            <div class="v">{{ nav_stats.views|humanize_count }}</div>
+            <div class="k">阅读量</div>
+        </div>
+    </div>
+</div>
+
+{% if hot_posts %}
+<div class="widget">
+    <div class="widget-head">🔥 热门文章</div>
+    <div class="widget-body">
+        <ol class="rank-list">
+            {% for p in hot_posts %}
+            <li>
+                <a class="rank-item" href="{{ p.get_absolute_url }}">
+                    <span class="rank-no">{{ forloop.counter }}</span>
+                    <span style="min-width: 0;">
+                        <span class="rank-title">{{ p.title }}</span>
+                        <span class="rank-sub">👁 {{ p.views|humanize_count }} · ❤ {{ p.like_count|humanize_count }} · 💬 {{ p.comment_count|humanize_count }}</span>
+                    </span>
+                </a>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+</div>
+{% endif %}
+
+{% if hot_tags %}
+<div class="widget">
+    <div class="widget-head">
+        <span>🏷️ 热门标签</span>
+        <a href="{% url 'tag_cloud' %}" class="more" style="margin-left: auto; font-size: .8rem;">全部 →</a>
+    </div>
+    <div class="widget-body">
+        <div class="tag-cloud">
+            {% for tag in hot_tags %}
+                <a class="tag-chip" href="{{ tag.get_absolute_url }}">{{ tag.name }} <span class="n">{{ tag.published_count }}</span></a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if nav_categories %}
+<div class="widget">
+    <div class="widget-head">📂 文章分类</div>
+    <div class="widget-body">
+        <ul class="rank-list">
+            {% for cat in nav_categories %}
+            <li>
+                <a class="rank-item" href="{% url 'index' %}?category={{ cat.id }}" style="align-items: center; padding: 7px 11px;">
+                    <span class="rank-no" style="background: var(--brand-light); color: var(--brand);">{{ forloop.counter }}</span>
+                    <span class="rank-title" style="flex: 1;">{{ cat.name }}</span>
+                    <span class="badge">{{ cat.published_count }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}

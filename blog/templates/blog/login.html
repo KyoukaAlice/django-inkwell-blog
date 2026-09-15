@@ -1,0 +1,56 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+{% comment %}登录页：独立全屏卡片布局，不使用 base 的双栏骨架{% endcomment %}
+
+{% block title %}登录 - 我的博客{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <div class="mark">📝</div>
+            <h1>欢迎回来</h1>
+            <p>登录后即可点赞、收藏、评论与写作</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}">
+                    <span>{% if message.tags == 'success' %}✅{% else %}⚠️{% endif %}</span>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+            <div class="form-group">
+                <label class="form-label" for="id_username">用户名</label>
+                <input type="text" name="username" id="id_username" class="form-control"
+                       placeholder="请输入用户名" required autofocus autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_password">密码</label>
+                <input type="password" name="password" id="id_password" class="form-control"
+                       placeholder="请输入密码" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                登录
+            </button>
+        </form>
+
+        <div class="auth-foot">
+            还没有账号？<a href="{% url 'register' %}">立即注册 →</a>
+        </div>
+        <div class="auth-alt">
+            <a href="{% url 'index' %}">← 先随便逛逛</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block sidebar %}{% endblock %}

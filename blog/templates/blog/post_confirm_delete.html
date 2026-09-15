@@ -1,0 +1,39 @@
+{% extends 'blog/base.html' %}
+{% load blog_extras %}
+{% comment %}删除文章确认页{% endcomment %}
+
+{% block title %}删除文章 - 我的博客{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'index' %}">首页</a>
+    <span class="sep">/</span>
+    <a href="{% url 'post_detail' post.id %}">{{ post.title|truncatechars:24 }}</a>
+    <span class="sep">/</span>
+    <span>删除确认</span>
+</div>
+
+<div class="card" style="max-width: 620px; margin: 0 auto;">
+    <div class="card-body" style="text-align: center; padding: 38px 30px;">
+        <div style="font-size: 3rem; line-height: 1; margin-bottom: 14px;">🗑️</div>
+        <h1 style="font-size: 1.35rem; margin-bottom: 10px;">确定要删除这篇文章吗？</h1>
+        <p class="text-2" style="margin-bottom: 6px;">
+            《<strong>{{ post.title }}</strong>》
+        </p>
+        <p class="text-3 text-sm" style="margin-bottom: 22px;">
+            删除后文章内容、{{ post.comment_count }} 条评论与 {{ post.like_count }} 个点赞都会一并消失，此操作不可恢复。
+        </p>
+
+        <div class="alert alert-warning" style="text-align: left;">
+            <span>💡</span>
+            <span>如果只是想暂时隐藏，可以在个人中心把文章切换为「草稿」，草稿只有你自己能看到。</span>
+        </div>
+
+        <form method="post" class="flex gap-10 items-center" style="justify-content: center; flex-wrap: wrap;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-lg">确认删除</button>
+            <a href="{% url 'post_detail' post.id %}" class="btn btn-ghost btn-lg">取消，返回文章</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
