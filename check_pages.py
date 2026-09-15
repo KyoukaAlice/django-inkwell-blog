@@ -19,7 +19,7 @@ import urllib.request
 REPO = 'KyoukaAlice/django-inkwell-blog'
 OWNER, NAME = REPO.split('/')
 SITE = f'https://{OWNER.lower()}.github.io/{NAME}/'
-ENTRY = SITE + 'index-preview-list.html'
+ENTRY = SITE + 'index-generated.html'
 TOKEN = __import__('os').environ.get('GITHUB_TOKEN', '')
 
 
