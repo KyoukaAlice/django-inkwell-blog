@@ -15,20 +15,22 @@ GitHub Pages 只能托管静态文件（HTML / CSS / JS），而 Django 是服�
 
 用法
 ----
-    python manage.py build_snapshot               # 输出到仓库根目录（Pages 零配置生效）
-    python manage.py build_snapshot -o docs       # 输出到 docs/ 子目录
+    python manage.py build_snapshot               # 输出到 docs/（推荐）
+    python manage.py build_snapshot -o .          # 输出到仓库根目录
     python manage.py build_snapshot --skip-admin  # 不抓 /admin/ 后台界面
 
-为什么默认输出到根目录
-----------------------
-GitHub Pages 的「Source」有两种：分支的根目录，或分支的 /docs 目录。
-本仓库的 Pages 一开始被设成了「main + 根目录」，而改这个设置需要 token 具备
-Pages 写权限。与其让你去网页上点，不如把快照直接放到根目录 —— 这样
-Pages 会自动生效，完全不用改任何设置。
+为什么默认 docs/
+-----------------
+GitHub Pages 的 Source 有两种：分支的根目录，或分支的 docs/ 目录。
+用 docs/ 的好处是仓库根目录保持干净 —— 39 个生成出来的 HTML 不会和
+manage.py、README.md 混在一起，一眼就能看出哪些是项目文件。
 
-根目录模式下只写「白名单内」的文件（HTML + preview.html + static/ + media/ +
-.nojekyll），绝不会碰 manage.py、README.md、blog/ 这些项目文件；
-仓库自带的 index.html 会被生成为一个跳转页，指向预览目录。
+对应地，Pages 设置要选「Deploy from a branch → main → /docs」：
+  https://github.com/<用户名>/<仓库名>/settings/pages
+（这一步需要 token 具备 Pages 写权限才能用 API 自动化，否则手动点一下即可。）
+
+生成器有 manifest 保护：每次构建只清理自己上次产出的文件，
+再加上双保险的路径校验，绝不会碰到项目源码。所以 -o . 也是安全的。
 """
 import re
 import shutil
@@ -48,9 +50,6 @@ from blog.models import Post
 # 根目录模式下靠它只删自己上次生成的东西，不会误删项目文件。
 MANIFEST_NAME = '.snapshot-manifest.json'
 MANAGED_DIRS = ('static', 'media')
-
-# 根目录模式下允许写入的顶层名字（白名单，其余一律不碰）
-ROOT_MODE_ALLOWED = {'preview.html', MANIFEST_NAME, '.nojekyll'} | set(MANAGED_DIRS)
 
 # 需要抓取的页面：(路径, 输出文件名, 是否要登录, 说明)
 PAGES = [
@@ -95,8 +94,13 @@ DYNAMIC_PATH_PATTERNS = [
     (re.compile(r'^post/(\d+)/delete/?$'), r'post/\1/delete.html'),
     (re.compile(r'^post/(\d+)/?$'), r'post/\1/index.html'),
     (re.compile(r'^u/([\w.@+-]+)/?$'), r'u-\1.html'),
-    (re.compile(r'^tag/([\w-]+)/?$'), r'tag-\1.html'),
 ]
+# 标签路径单独处理：它的输出文件名要看标签名（见 _tag_filename_map），
+# 不能像上面那样用固定模板。
+TAG_PATH_RE = re.compile(r'^tag/([\w-]+)/?$')
+
+# 文件名里不允许出现的字符（Windows 比 Linux 严格，按 Windows 来最稳）
+UNSAFE_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|\s]+')
 
 # 普通页面路径 -> 快照里的文件名（顺序有意义：长路径在前）
 PAGE_MAP = [
@@ -154,11 +158,9 @@ class Command(BaseCommand):
     help = '把网站渲染成静态 HTML 快照（用于 GitHub Pages 预览）'
 
     def add_arguments(self, parser):
-        parser.add_argument('-o', '--output', default='.',
-                            help='输出目录。默认 "." 即仓库根目录 —— 这样 GitHub Pages '
-                                 '用默认的「main 分支 + 根目录」就能零配置生效')
-        parser.add_argument('--docs', dest='output', action='store_const', const='docs',
-                            help='输出到 docs/ 子目录（等价于 -o docs）')
+        parser.add_argument('-o', '--output', default='docs',
+                            help='输出目录，默认 docs（GitHub Pages 从该目录发布，'
+                                 '仓库根目录保持干净）。写 -o . 可输出到根目录')
         parser.add_argument('--include-admin', action='store_true',
                             help='额外抓取 /admin/ 后台界面')
         parser.add_argument('--skip-admin', action='store_true',
@@ -170,6 +172,10 @@ class Command(BaseCommand):
         base_dir = Path(settings.BASE_DIR)
         output_dir = (base_dir / options['output']).resolve()
         root_mode = output_dir == base_dir
+
+        # 标签 slug -> 快照文件名 的映射，_render_all 里填充，链接改写阶段要用。
+        self.tag_filenames = {}
+        self.owner = None
 
         if root_mode:
             self._clean_previous(root_mode, output_dir)
@@ -311,15 +317,44 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.MIGRATE_HEADING('\n抓取标签页…'))
         from blog.models import Tag
-        for tag in Tag.objects.all():
-            # 每个标签一个独立文件，避免互相覆盖
-            fetch(f'/tag/{tag.slug}/', f'tag-{tag.slug}.html', f'标签：{tag.name}')
+        tags = list(Tag.objects.all().order_by('name'))
+        # 中文标签的 slug 是自动生成的 hash（比如 tag-a42e710340），
+        # 直接用会得到 "tag-tag-a42e710340.html" 这种谁也看不懂的文件名。
+        # 所以快照文件名改用标签名本身，并做文件系统安全化处理。
+        self.tag_filenames = self._tag_filename_map(tags)
+        for tag in tags:
+            fetch(f'/tag/{tag.slug}/', self.tag_filenames[tag.slug], f'标签：{tag.name}')
 
         if include_admin:
             self.stdout.write(self.style.MIGRATE_HEADING('\n抓取后台界面…'))
             fetch('/admin/', 'admin.html', '后台首页', need_login=True)
 
         return written
+
+    # -- 标签文件命名 ------------------------------------------------------
+    def _tag_filename_map(self, tags):
+        """给每个标签算一个「人看得懂」的快照文件名。
+
+        为什么不用 Django 的 slug：中文标签 slugify 后是空的，模型会退化成
+        hash（比如 tag-a42e710340），于是快照文件名变成
+        "tag-tag-a42e710340.html" —— 又长又看不懂。这里直接用标签名，
+        既保留中文可读性，URL 转义后也能正常访问。
+        """
+        import unicodedata
+        mapping = {}
+        used = set()
+        for tag in tags:
+            # NFC 归一化：避免同一个中文标签因为组合字符不同而产生两个文件
+            name = unicodedata.normalize('NFC', tag.name)
+            safe = UNSAFE_FILENAME_CHARS.sub('-', name).strip('-.')
+            safe = safe or tag.slug
+            candidate = f'tag-{safe}.html'
+            if candidate in used:
+                # 重名时补上 slug 后 6 位，保证唯一
+                candidate = f'tag-{safe}-{tag.slug[-6:]}.html'
+            used.add(candidate)
+            mapping[tag.slug] = candidate
+        return mapping
 
     # -- 复制静态资源 ------------------------------------------------------
     def _copy_static(self, output_dir):
@@ -424,19 +459,27 @@ class Command(BaseCommand):
                 if not clean:
                     new = up + 'index.html' + suffix
                 else:
-                    # 1) 动态路径（/post/12/、/u/xxx/、/tag/xxx/ 等）
-                    mapped = None
-                    for pattern, repl in DYNAMIC_PATH_PATTERNS:
-                        if pattern.match(clean):
-                            mapped = pattern.sub(repl, clean)
-                            break
-                    if mapped is None:
-                        # 2) 普通页面路径
-                        for key, target in PAGE_MAP:
-                            if clean == key:
-                                mapped = target
+                    # 1) 标签页：文件名由标签名决定，查映射表
+                    tag_match = TAG_PATH_RE.match(clean)
+                    if tag_match:
+                        mapped = (self.tag_filenames or {}).get(tag_match.group(1))
+                        if mapped is None:
+                            # 映射表里没有（比如快照没抓这个标签），退回首页避免死链
+                            mapped = 'index.html'
+                    else:
+                        # 2) 其它动态路径（/post/12/、/u/xxx/ 等）
+                        mapped = None
+                        for pattern, repl in DYNAMIC_PATH_PATTERNS:
+                            if pattern.match(clean):
+                                mapped = pattern.sub(repl, clean)
                                 break
-                    # 3) 静态资源等路径在快照里是同构的，直接用
+                        if mapped is None:
+                            # 3) 普通页面路径
+                            for key, target in PAGE_MAP:
+                                if clean == key:
+                                    mapped = target
+                                    break
+                    # 4) 静态资源等路径在快照里是同构的，直接用
                     new = up + (mapped if mapped else clean) + suffix
                 return f'{match.group("attr")}{match.group("q")}{new}{match.group("q")}'
 

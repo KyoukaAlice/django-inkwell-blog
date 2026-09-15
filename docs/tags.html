@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0aa7e0">
+    <title>全部标签 - 我的博客</title>
+    <meta name="description" content="我的博客的全部标签，按文章数量从多到少排列。">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+    <link rel="stylesheet" href="static/css/style.css">
+    
+    <script>
+        // 提前应用主题，避免深色模式下的白色闪屏
+        (function () {
+            var saved = localStorage.getItem('djangoblog-theme');
+            if (!saved) {
+                saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                    ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+</head>
+<body>
+
+
+<header class="header">
+    <div class="header-inner">
+        <a href="index.html" class="logo">
+            <span class="logo-mark">📝</span>
+            <span>我的博客<small>Django 博客系统</small></span>
+        </a>
+
+        <button class="icon-btn menu-toggle" title="菜单" aria-label="展开菜单">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+
+        <nav class="nav">
+            <a href="index.html" class="">首页</a>
+            <a href="tags.html" class="active">标签</a>
+            <a href="about.html" class="">关于</a>
+            
+        </nav>
+
+        <div class="header-actions">
+            <form class="search-mini hide-sm" method="get" action="search.html" role="search">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input type="search" name="keyword" placeholder="搜索文章…" value="" aria-label="搜索">
+            </form>
+
+            <button class="icon-btn theme-toggle" title="切换主题" aria-label="切换深色/浅色模式"></button>
+
+            
+                <a href="login.html" class="btn btn-ghost btn-sm">登录</a>
+                <a href="register.html" class="btn btn-primary btn-sm hide-sm">注册</a>
+            
+        </div>
+    </div>
+</header>
+
+
+<div class="wrap">
+    <main class="main">
+        
+
+        
+<div class="page-head">
+    <div class="page-head-bar">
+        <div>
+            <h1>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0l-7-7A2 2 0 0 1 3 12.2V5a2 2 0 0 1 2-2h7.2a2 2 0 0 1 1.4.6l7 7a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>
+                全部标签
+            </h1>
+            <p>共 8 个标签 · 字号越大表示该标签下的文章越多</p>
+        </div>
+        <a href="index.html" class="btn btn-ghost btn-sm">← 返回首页</a>
+    </div>
+</div>
+
+
+<div class="card">
+    <div class="card-body">
+        <div class="tag-cloud">
+            
+            
+            <a class="tag-chip"
+               href="tag-Django.html"
+               title="Django：4 篇文章"
+               style="font-size: 0.92rem;">
+                # Django <span class="n">4</span>
+            </a>
+            
+            
+            <a class="tag-chip"
+               href="tag-Python.html"
+               title="Python：4 篇文章"
+               style="font-size: 0.92rem;">
+                # Python <span class="n">4</span>
+            </a>
+            
+            
+            <a class="tag-chip"
+               href="tag-毕业设计.html"
+               title="毕业设计：3 篇文章"
+               style="font-size: 0.92rem;">
+                # 毕业设计 <span class="n">3</span>
+            </a>
+            
+            
+            <a class="tag-chip"
+               href="tag-MySQL.html"
+               title="MySQL：2 篇文章"
+               style="font-size: 0.92rem;">
+                # MySQL <span class="n">2</span>
+            </a>
+            
+            
+            <a class="tag-chip"
+               href="tag-Markdown.html"
+               title="Markdown：1 篇文章"
+               style="font-size: 0.82rem;">
+                # Markdown <span class="n">1</span>
+            </a>
+            
+            
+            <a class="tag-chip"
+               href="tag-前端.html"
+               title="前端：1 篇文章"
+               style="font-size: 0.82rem;">
+                # 前端 <span class="n">1</span>
+            </a>
+            
+            
+            <a class="tag-chip text-3"
+               href="tag-算法.html"
+               title="算法：0 篇文章"
+               style="font-size: 0.82rem;">
+                # 算法 <span class="n">0</span>
+            </a>
+            
+            
+            <a class="tag-chip text-3"
+               href="tag-运维.html"
+               title="运维：0 篇文章"
+               style="font-size: 0.82rem;">
+                # 运维 <span class="n">0</span>
+            </a>
+            
+        </div>
+    </div>
+</div>
+
+<p class="text-xs text-3 text-center mt-16">灰色的标签表示暂时还没有已发布的文章。</p>
+
+
+    </main>
+
+    
+    <aside class="side">
+        
+
+
+
+<div class="widget">
+    <div class="widget-body" style="padding: 18px;">
+        <h3 style="font-size: 1rem; margin-bottom: 8px;">👋 欢迎来到我的博客</h3>
+        <p class="text-sm text-3" style="margin-bottom: 14px;">登录后即可点赞、收藏、发表评论，和作者一起交流。</p>
+        <div class="flex gap-10">
+            <a href="login.html" class="btn btn-primary btn-sm" style="flex: 1;">登录</a>
+            <a href="register.html" class="btn btn-outline btn-sm" style="flex: 1;">注册</a>
+        </div>
+    </div>
+</div>
+
+
+<div class="widget">
+    <div class="widget-head">📊 站点数据</div>
+    <div class="stat-grid">
+        <div class="stat-box">
+            <div class="v">6</div>
+            <div class="k">篇文章</div>
+        </div>
+        <div class="stat-box">
+            <div class="v">1.8k</div>
+            <div class="k">阅读量</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="widget">
+    <div class="widget-head">🔥 热门文章</div>
+    <div class="widget-body">
+        <ol class="rank-list">
+            
+            <li>
+                <a class="rank-item" href="post/3/index.html">
+                    <span class="rank-no">1</span>
+                    <span style="min-width: 0;">
+                        <span class="rank-title">用 Markdown 写博客正文：渲染 + 代码高亮 + XSS 防护</span>
+                        <span class="rank-sub">👁 436 · ❤ 2 · 💬 0</span>
+                    </span>
+                </a>
+            </li>
+            
+            <li>
+                <a class="rank-item" href="post/1/index.html">
+                    <span class="rank-no">2</span>
+                    <span style="min-width: 0;">
+                        <span class="rank-title">Django 评论系统改造：从一级评论到 B 站式楼中楼</span>
+                        <span class="rank-sub">👁 331 · ❤ 0 · 💬 7</span>
+                    </span>
+                </a>
+            </li>
+            
+            <li>
+                <a class="rank-item" href="post/4/index.html">
+                    <span class="rank-no">3</span>
+                    <span style="min-width: 0;">
+                        <span class="rank-title">毕业设计选题到答辩：一个博客系统能讲哪些技术点</span>
+                        <span class="rank-sub">👁 301 · ❤ 1 · 💬 0</span>
+                    </span>
+                </a>
+            </li>
+            
+            <li>
+                <a class="rank-item" href="post/5/index.html">
+                    <span class="rank-no">4</span>
+                    <span style="min-width: 0;">
+                        <span class="rank-title">Python 装饰器从入门到在 Django 里用起来</span>
+                        <span class="rank-sub">👁 280 · ❤ 1 · 💬 0</span>
+                    </span>
+                </a>
+            </li>
+            
+            <li>
+                <a class="rank-item" href="post/2/index.html">
+                    <span class="rank-no">5</span>
+                    <span style="min-width: 0;">
+                        <span class="rank-title">Django ORM 查询优化：把首页从 29 次查询降到 13 次</span>
+                        <span class="rank-sub">👁 227 · ❤ 1 · 💬 0</span>
+                    </span>
+                </a>
+            </li>
+            
+        </ol>
+    </div>
+</div>
+
+
+
+<div class="widget">
+    <div class="widget-head">
+        <span>🏷️ 热门标签</span>
+        <a href="tags.html" class="more" style="margin-left: auto; font-size: .8rem;">全部 →</a>
+    </div>
+    <div class="widget-body">
+        <div class="tag-cloud">
+            
+                <a class="tag-chip" href="tag-Django.html">Django <span class="n">4</span></a>
+            
+                <a class="tag-chip" href="tag-Python.html">Python <span class="n">4</span></a>
+            
+                <a class="tag-chip" href="tag-毕业设计.html">毕业设计 <span class="n">3</span></a>
+            
+                <a class="tag-chip" href="tag-MySQL.html">MySQL <span class="n">2</span></a>
+            
+                <a class="tag-chip" href="tag-Markdown.html">Markdown <span class="n">1</span></a>
+            
+                <a class="tag-chip" href="tag-前端.html">前端 <span class="n">1</span></a>
+            
+        </div>
+    </div>
+</div>
+
+
+
+<div class="widget">
+    <div class="widget-head">📂 文章分类</div>
+    <div class="widget-body">
+        <ul class="rank-list">
+            
+            <li>
+                <a class="rank-item" href="index.html?category=1" style="align-items: center; padding: 7px 11px;">
+                    <span class="rank-no" style="background: var(--brand-light); color: var(--brand);">1</span>
+                    <span class="rank-title" style="flex: 1;">技术笔记</span>
+                    <span class="badge">3</span>
+                </a>
+            </li>
+            
+            <li>
+                <a class="rank-item" href="index.html?category=3" style="align-items: center; padding: 7px 11px;">
+                    <span class="rank-no" style="background: var(--brand-light); color: var(--brand);">2</span>
+                    <span class="rank-title" style="flex: 1;">学习路线</span>
+                    <span class="badge">1</span>
+                </a>
+            </li>
+            
+            <li>
+                <a class="rank-item" href="index.html?category=4" style="align-items: center; padding: 7px 11px;">
+                    <span class="rank-no" style="background: var(--brand-light); color: var(--brand);">3</span>
+                    <span class="rank-title" style="flex: 1;">生活随笔</span>
+                    <span class="badge">1</span>
+                </a>
+            </li>
+            
+            <li>
+                <a class="rank-item" href="index.html?category=2" style="align-items: center; padding: 7px 11px;">
+                    <span class="rank-no" style="background: var(--brand-light); color: var(--brand);">4</span>
+                    <span class="rank-title" style="flex: 1;">项目实战</span>
+                    <span class="badge">1</span>
+                </a>
+            </li>
+            
+        </ul>
+    </div>
+</div>
+
+
+    </aside>
+    
+</div>
+
+
+<footer class="footer">
+    <div class="footer-inner">
+        <div>
+            <strong style="color: var(--text-2);">📝 我的博客</strong>
+            <span> · 基于 Django 4.2 构建 · 分享思考与成长</span>
+        </div>
+        <div class="footer-links">
+            <a href="index.html">首页</a>
+            <a href="tags.html">标签</a>
+            <a href="about.html">关于本站</a>
+            
+            <span>&copy; 2026 All rights reserved.</span>
+        </div>
+    </div>
+</footer>
+
+<script>window.DJANGO_BLOG = { notifPollUrl: "/notifications/poll/" };</script>
+<script src="static/js/main.js"></script>
+
+</body>
+</html>
