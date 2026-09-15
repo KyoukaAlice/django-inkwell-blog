@@ -160,14 +160,26 @@ manage.bat sqlite test blog        :: 88 个单元测试
 通知产生与「不给自己发通知」、通知已读、用户主页草稿可见性、搜索与筛选、分页边界、
 **查询次数上界（N+1 回归）**。
 
-另有几个独立校验脚本：
+另有几个独立校验脚本（都在项目根目录，用 `.venv\Scripts\python.exe` 运行）：
 
 | 脚本 | 说明 |
 | --- | --- |
-| `smoke_check.py` | 75 项 HTTP 冒烟检查（需先启动服务器） |
+| `smoke_check.py` | 75 项 HTTP 冒烟检查（需先 `start.bat sqlite` 启动服务器） |
 | `verify_admin.py` | 29 项 Django admin 后台检查 |
 | `verify_markdown.py` | 17 项 Markdown 渲染 / XSS 过滤检查 |
-| `verify_snapshot.py` | 静态快照链接完整性校验 |
+| `verify_snapshot.py` | 静态快照链接完整性校验（0 死链才算通过） |
+| `verify_liquid.py` | 检查 Markdown 里有没有会被 Jekyll 当模板解析的写法<br>（不加这层检查，GitHub Pages 会构建失败并给你发报错邮件） |
+| `check_pages.py` | Pages 状态查询 + 线上探活（分 DNS/TCP/TLS/HTTP 四步定位问题） |
+| `check_db.py` | 数据库连通性预检，`start.bat` 启动前会调用 |
+| `setup_smoke_user.py` | 给冒烟测试准备独立账号（`smoke_check.py` 会调用） |
+
+> 改了页面、想更新在线预览时：
+> ```cmd
+> .venv\Scripts\python.exe manage.py build_snapshot
+> .venv\Scripts\python.exe verify_liquid.py
+> .venv\Scripts\python.exe verify_snapshot.py docs
+> git add -A && git commit -m "chore: 更新静态预览" && git push
+> ```
 
 ---
 
