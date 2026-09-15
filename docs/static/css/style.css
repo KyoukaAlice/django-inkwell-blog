@@ -1009,14 +1009,66 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 .big-stat .v { font-size: 2rem; font-weight: 800; letter-spacing: -1px; background: linear-gradient(120deg, var(--brand), var(--accent)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .big-stat .k { font-size: .84rem; color: var(--text-3); margin-top: 3px; }
 
-/* ---------- 25. 编辑器页（文章发布） ---------- */
-.editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
-@media (max-width: 1000px) { .editor-layout { grid-template-columns: minmax(0, 1fr); } }
-.editor-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: calc(var(--header-h) + 22px); }
+/* ---------- 25. 编辑器页（文章发布 / 编辑） ---------- */
+/* 布局目标：左右两栏底部对齐，不要出现「右栏到底了、左栏还剩一大片空白」。
+   做法是让左栏的正文编辑器撑满可用高度，而不是硬塞内容。
+   原来用的是 align-items: start，两栏各自独立高度，左栏短一截就空出来了。 */
+.editor-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
+    /* stretch：让两栏等高，右栏卡片就不会只占一半 */
+    align-items: stretch;
+}
+.editor-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;          /* 防止 grid 子项被内容撑破 */
+    min-height: 0;
+}
+/* 正文卡片吃掉剩余高度，摘要卡片保持自然高度跟在下面 */
+.editor-card { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.editor-card-body { flex: 1 1 auto; display: flex; flex-direction: column; gap: 18px; min-height: 0; }
+/* 标题那一组不参与拉伸 */
+.editor-card-body > .form-group:not(.editor-grow) { flex: 0 0 auto; }
+/* 正文那一组撑满，里面的 textarea 再撑满它 */
+.editor-grow { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.editor-grow .markdown-editor {
+    flex: 1 1 auto;
+    min-height: 380px;     /* 兜底：不支持 dvh 的浏览器也有个像样的高度 */
+    min-height: calc(100vh - 200px);
+    min-height: calc(100dvh - 200px);
+    resize: vertical;      /* 还是允许手动拉高 */
+}
+/* 右栏：桌面端也用 flex 撑满，卡片之间均分多余的空白，避免底部留一大块空 */
+.editor-side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: calc(var(--header-h) + 22px);
+    align-self: start;
+}
+.editor-side > .card { flex: 0 0 auto; }
+/* Markdown 速查可以长一点，让它吃掉右栏剩余的空白 */
+.editor-side > .card:last-of-type { flex: 1 1 auto; }
+
 .markdown-editor { font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace; font-size: .9rem; line-height: 1.75; }
 .md-help { font-size: .82rem; color: var(--text-3); line-height: 1.8; }
 .md-help code { background: var(--code-bg); padding: 1px 6px; border-radius: var(--radius-xs); color: var(--accent-dark); font-size: .85em; }
 .md-help kbd { background: var(--surface-3); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; font-size: .8em; }
+
+/* 窄屏：回到单栏，正文框不要强撑一屏高（手机上会显得特别长） */
+@media (max-width: 1000px) {
+    .editor-layout { grid-template-columns: minmax(0, 1fr); }
+    .editor-side { position: static; }
+    .editor-side > .card:last-of-type { flex: 0 0 auto; }
+    .editor-grow .markdown-editor {
+        min-height: 240px;
+        height: auto;
+    }
+}
 
 /* ---------- 26. 页脚 ---------- */
 .footer {

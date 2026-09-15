@@ -70,18 +70,10 @@
     </div>
     
         <a class="notif-item unread" href="../../post/1/index.html">
-            <span class="ico">⭐</span>
-            <span>
-                bob 收藏了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
-                <time>09-15 20:37</time>
-            </span>
-        </a>
-    
-        <a class="notif-item unread" href="../../post/1/index.html">
             <span class="ico">💬</span>
             <span>
                 bob 评论了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
-                <time>09-15 20:37</time>
+                <time>09-16 00:23</time>
             </span>
         </a>
     
@@ -89,7 +81,15 @@
             <span class="ico">👍</span>
             <span>
                 alice 点赞了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
-                <time>09-15 20:37</time>
+                <time>09-16 00:23</time>
+            </span>
+        </a>
+    
+        <a class="notif-item unread" href="../../post/1/index.html">
+            <span class="ico">⭐</span>
+            <span>
+                bob 收藏了你的文章《Django 评论系统改造：从一级评论到 B 站式楼中楼》
+                <time>09-16 00:23</time>
             </span>
         </a>
     
@@ -165,7 +165,7 @@
                         
                         <hr>
                         <form method="post" action="../../logout">
-                            <input type="hidden" name="csrfmiddlewaretoken" value="8ksm2UnGMYJW7r1teHAmDCgxj0svWuMfqpUg5ULfJxHuNnJZsPB22Ctu9RURD3Vh">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="NjdTqnoCPXONlrbgejfuGKGrwXiEbEsRHFWSQx7ugkQenfdLlWqNgsyWOzybzt2q">
                             <button type="submit" class="danger">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
                                 退出登录
@@ -205,22 +205,22 @@
     </div>
 </div>
 
-<form method="post" enctype="multipart/form-data" id="post-form">
-    <input type="hidden" name="csrfmiddlewaretoken" value="8ksm2UnGMYJW7r1teHAmDCgxj0svWuMfqpUg5ULfJxHuNnJZsPB22Ctu9RURD3Vh">
+<form method="post" enctype="multipart/form-data" id="post-form" class="post-form">
+    <input type="hidden" name="csrfmiddlewaretoken" value="NjdTqnoCPXONlrbgejfuGKGrwXiEbEsRHFWSQx7ugkQenfdLlWqNgsyWOzybzt2q">
 
     
 
     <div class="editor-layout">
-        <div>
-            <div class="card">
-                <div class="card-body">
+        <div class="editor-main">
+            <div class="card editor-card">
+                <div class="card-body editor-card-body">
                     <div class="form-group">
                         <label class="form-label" for="id_title">标题</label>
                         <input type="text" name="title" value="Django 评论系统改造：从一级评论到 B 站式楼中楼" class="form-control" placeholder="起一个吸引人的标题…" maxlength="200" required id="id_title">
                         
                     </div>
 
-                    <div class="form-group mb-0">
+                    <div class="form-group editor-grow mb-0">
                         <label class="form-label" for="id_content">
                             正文 <span class="text-xs text-3">（Markdown）</span>
                         </label>
@@ -323,13 +323,13 @@ post.views += 1   # 不写这句，页面上显示的还是旧值
                         <select name="category" class="form-control" id="id_category">
   <option value="">— 未分类 —</option>
 
-  <option value="2" selected>项目实战</option>
-
   <option value="3">学习路线</option>
 
   <option value="4">生活随笔</option>
 
   <option value="1">技术笔记</option>
+
+  <option value="2" selected>项目实战</option>
 
 </select>
                         
