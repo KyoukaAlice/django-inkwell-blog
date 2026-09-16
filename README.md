@@ -5,12 +5,14 @@
 
 > ### 🔗 在线预览
 >
-> **界面预览目录**：<https://kyoukaalice.github.io/django-inkwell-blog/index-generated.html>
-> **站点首页**：<https://kyoukaalice.github.io/django-inkwell-blog/index.html>
+> **📖 项目介绍页**：<https://kyoukaalice.github.io/django-inkwell-blog/>
+> **🖥️ 界面快照首页**：<https://kyoukaalice.github.io/django-inkwell-blog/app/index.html>
+> **📑 全部页面索引**：<https://kyoukaalice.github.io/django-inkwell-blog/app/index-generated.html>
 >
-> ⚠️ 这是**静态快照**：样式、排版、评论楼中楼都是真实渲染结果，但登录、发文、
+> ⚠️ 快照里的样式、排版、评论楼中楼都是真实渲染结果，但登录、发文、
 > 点赞、发评论这些需要服务端的操作不会生效 —— GitHub Pages 只能托管静态文件，
 > 跑不了 Django。想看完整功能请在本地运行（见下方快速开始）。
+
 ---
 
 ## 功能一览
@@ -112,36 +114,42 @@ python manage.py runserver
 
 ## 界面预览（GitHub Pages）
 
-GitHub Pages 只能托管静态文件，跑不了 Django 服务端。所以本仓库提供一个
-**静态快照**：把每个页面在真实数据下渲染成 HTML 后放在 `docs/` 目录，供 Pages 直接发布。
+GitHub Pages 只能托管静态文件，跑不了 Django 服务端。所以本仓库用两份内容组成预览站：
+
+| 路径 | 内容 | 来源 |
+| --- | --- | --- |
+| `docs/index.html` | **项目介绍页**（Hero / 功能 / 评论系统 / 架构 / 快速开始） | 手写，`build_snapshot` 不会碰它 |
+| `docs/app/` | **站点静态快照**（39 个页面 + 样式） | `python manage.py build_snapshot` 生成 |
+
+把快照放在 `docs/app/` 而不是 `docs/` 根目录，是为了把根目录的 `index.html` 让给介绍页：
+访客打开 Pages 地址先看到项目介绍，再从那里进快照。生成页面之间全是相对链接，
+整体放进 `app/` 子目录不需要改任何链接。
 
 ```bash
-python manage.py build_snapshot      # 重新生成快照（输出到 docs/）
-python verify_snapshot.py docs       # 校验链接完整性（0 死链才算通过）
-python check_pages.py --open         # 检查 Pages 构建状态 + 线上探活
+python manage.py build_snapshot      # 重新生成快照（输出到 docs/app/）
+python verify_snapshot.py            # 校验快照链接完整性（0 死链才算通过）
+python verify_intro.py               # 校验介绍页结构、链接与关键内容
+python check_pages.py --open         # 线上探活（分 DNS/TCP/TLS/HTTP 四步定位问题）
 ```
 
-快照只放在 `docs/` 一个目录里，**仓库根目录保持干净** —— 39 个生成出来的 HTML
-不会和 `manage.py`、`README.md` 混在一起。Pages 设置对应为
-「Deploy from a branch → main → `/docs`」。
-
 生成器带 manifest 保护：每次构建只清理上次自己生成的文件（并做路径校验），
-不会碰 `manage.py`、`blog/` 等项目文件。也支持 `-o .` 输出到根目录，
-如果你的 Pages 是「main + 根目录」就能用。
+不会碰 `docs/index.html`、`manage.py`、`blog/` 等项目文件。
 
 改完页面后同步到线上：
 
 ```bash
 python manage.py build_snapshot
+python verify_snapshot.py && python verify_intro.py
 git add -A && git commit -m "chore: 更新静态预览" && git push
 ```
 
-Pages 会在 1～2 分钟内自动重新构建：
+Pages 会在 1～2 分钟内自动重新构建（Source 需设为「Deploy from a branch → main → `/docs`」）：
 
 | 入口 | 地址 |
 | --- | --- |
-| 预览目录（推荐） | <https://kyoukaalice.github.io/django-inkwell-blog/index-generated.html> |
-| 站点首页 | <https://kyoukaalice.github.io/django-inkwell-blog/index.html> |
+| 项目介绍页（推荐入口） | <https://kyoukaalice.github.io/django-inkwell-blog/> |
+| 站点首页快照 | <https://kyoukaalice.github.io/django-inkwell-blog/app/index.html> |
+| 全部页面索引 | <https://kyoukaalice.github.io/django-inkwell-blog/app/index-generated.html> |
 
 > 快照里的样式、排版、评论楼中楼都是真实渲染结果；
 > 但登录、发文、点赞、发评论这类操作不会生效——它们是 Django 视图，需要 Python 进程。
@@ -168,6 +176,8 @@ manage.bat sqlite test blog        :: 88 个单元测试
 | `verify_admin.py` | 29 项 Django admin 后台检查 |
 | `verify_markdown.py` | 17 项 Markdown 渲染 / XSS 过滤检查 |
 | `verify_snapshot.py` | 静态快照链接完整性校验（0 死链才算通过） |
+| `verify_intro.py` | 项目介绍页的结构、链接与关键内容校验 |
+| `verify_pages_layout.py` | 按 Pages 部署结构实探（起本地服务器逐个请求关键页面） |
 | `verify_liquid.py` | 检查 Markdown 里有没有会被 Jekyll 当模板解析的写法<br>（不加这层检查，GitHub Pages 会构建失败并给你发报错邮件） |
 | `check_pages.py` | Pages 状态查询 + 线上探活（分 DNS/TCP/TLS/HTTP 四步定位问题） |
 | `check_db.py` | 数据库连通性预检，`start.bat` 启动前会调用 |
@@ -177,7 +187,7 @@ manage.bat sqlite test blog        :: 88 个单元测试
 > ```cmd
 > .venv\Scripts\python.exe manage.py build_snapshot
 > .venv\Scripts\python.exe verify_liquid.py
-> .venv\Scripts\python.exe verify_snapshot.py docs
+> .venv\Scripts\python.exe verify_snapshot.py
 > git add -A && git commit -m "chore: 更新静态预览" && git push
 > ```
 
@@ -202,7 +212,8 @@ DjangoBlog/
 │   └── templates/blog/         #   模板（base + partials + 19 个页面）
 ├── static/css/style.css        # 设计系统（CSS 变量 + 深浅双主题）
 ├── static/js/main.js           # 交互脚本
-├── docs/                       # GitHub Pages 静态快照（39 个页面 + 样式）
+├── docs/index.html             # GitHub Pages 项目介绍页（手写，含界面示意）
+├── docs/app/                   # 站点静态快照（39 个页面 + 样式）
 │                               #   由 manage.py build_snapshot 生成
 ├── setup_env.bat / start.bat / manage.bat   # Windows 一键脚本
 └── requirements.txt

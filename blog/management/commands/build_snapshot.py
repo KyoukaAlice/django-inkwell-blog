@@ -15,22 +15,21 @@ GitHub Pages 只能托管静态文件（HTML / CSS / JS），而 Django 是服�
 
 用法
 ----
-    python manage.py build_snapshot               # 输出到 docs/（推荐）
+    python manage.py build_snapshot               # 输出到 docs/app/（推荐）
+    python manage.py build_snapshot -o docs       # 输出到 docs/ 根目录
     python manage.py build_snapshot -o .          # 输出到仓库根目录
     python manage.py build_snapshot --skip-admin  # 不抓 /admin/ 后台界面
 
-为什么默认 docs/
------------------
-GitHub Pages 的 Source 有两种：分支的根目录，或分支的 docs/ 目录。
-用 docs/ 的好处是仓库根目录保持干净 —— 39 个生成出来的 HTML 不会和
-manage.py、README.md 混在一起，一眼就能看出哪些是项目文件。
+目录约定（重要）
+----------------
+    docs/index.html     项目介绍页 —— 手写的展示页，本命令**不会**碰它
+    docs/app/...        站点静态快照 —— 由本命令生成
 
-对应地，Pages 设置要选「Deploy from a branch → main → /docs」：
-  https://github.com/<用户名>/<仓库名>/settings/pages
-（这一步需要 token 具备 Pages 写权限才能用 API 自动化，否则手动点一下即可。）
+快照放在 docs/app/ 而不是 docs/ 根目录，是为了把 docs/index.html 让给
+项目介绍页：访客打开 Pages 地址先看到项目介绍，再从那里进快照。
+生成页面之间全是相对链接，整体放进 app/ 子目录不需要改任何链接。
 
-生成器有 manifest 保护：每次构建只清理自己上次产出的文件，
-再加上双保险的路径校验，绝不会碰到项目源码。所以 -o . 也是安全的。
+目录如果存在旧内容会先清掉（有 manifest 保护，只删自己上次生成的文件）。
 """
 import re
 import shutil
@@ -158,9 +157,9 @@ class Command(BaseCommand):
     help = '把网站渲染成静态 HTML 快照（用于 GitHub Pages 预览）'
 
     def add_arguments(self, parser):
-        parser.add_argument('-o', '--output', default='docs',
-                            help='输出目录，默认 docs（GitHub Pages 从该目录发布，'
-                                 '仓库根目录保持干净）。写 -o . 可输出到根目录')
+        parser.add_argument('-o', '--output', default='docs/app',
+                            help='输出目录，默认 docs/app（docs/index.html 留给手写的项目介绍页）。'
+                                 '写 -o docs 或 -o . 也可以')
         parser.add_argument('--include-admin', action='store_true',
                             help='额外抓取 /admin/ 后台界面')
         parser.add_argument('--skip-admin', action='store_true',
@@ -554,12 +553,19 @@ class Command(BaseCommand):
 
     # -- Pages 辅助文件 ----------------------------------------------------
     def _write_support_files(self, output_dir, written):
-        # .nojekyll：阻止 GitHub Pages 的 Jekyll 处理，保证 _ 开头的文件也能访问
+        # .nojekyll：阻止 GitHub Pages 的 Jekyll 处理，保证 _ 开头的文件也能访问。
+        #
+        # 它必须放在**发布根目录**才生效。Pages 的 Source 是 main + /docs，
+        # 所以发布根目录是 docs/ 而不是 docs/app/ —— 写到输出目录里是没用的，
+        # 顺手往上一级也写一份（只在上两级之内，避免写到仓库外面去）。
         (output_dir / '.nojekyll').write_text('', encoding='utf-8')
+        parent = output_dir.parent
+        if parent != output_dir and parent.name in ('docs', 'public', 'site'):
+            (parent / '.nojekyll').write_text('', encoding='utf-8')
 
-        # 预览目录页：把每个页面都列出来，点一下直接跳过去。
+        # 预览索引页：把每个页面都列出来，点一下直接跳过去。
         # 文件名用 index-generated.html 而不是 index.html ——
-        # 根目录模式下 index.html 要留给站点首页，不能被覆盖。
+        # index.html 是站点首页的快照，不能被这个索引覆盖。
         cards = '\n'.join(
             f'      <li><a href="{item["file"]}">{item["title"]}</a>'
             f' <code>{item["file"]}</code></li>'
@@ -570,7 +576,7 @@ class Command(BaseCommand):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DjangoBlog 静态预览目录</title>
+<title>DjangoBlog 页面索引 · 静态快照</title>
 <style>
   body {{ margin:0; font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
          background:#f4f6fa; color:#1b2434; line-height:1.7; }}
@@ -580,6 +586,9 @@ class Command(BaseCommand):
   .hero a {{ color:#fff; }}
   .wrap {{ max-width:920px; margin:0 auto; padding:26px 24px 60px; }}
   .tip {{ background:#fff7e6; border:1px solid #f5d9a3; border-radius:12px; padding:14px 18px; margin-bottom:22px; font-size:.9rem; }}
+  .back {{ display:inline-flex; align-items:center; gap:6px; margin-bottom:18px;
+          color:#0891c4; text-decoration:none; font-weight:600; font-size:.9rem; }}
+  .back:hover {{ text-decoration:underline; }}
   ul {{ list-style:none; padding:0; margin:0; }}
   li {{ background:#fff; border:1px solid #e5e9f0; border-radius:10px; margin-bottom:8px; }}
   li a {{ display:block; padding:12px 16px; color:#0891c4; text-decoration:none; font-weight:600; }}
@@ -589,11 +598,12 @@ class Command(BaseCommand):
 </head>
 <body>
 <div class="hero">
-  <h1>📸 DjangoBlog 静态预览</h1>
-  <p>这是把网站渲染成静态 HTML 后的快照。点击下面任意一页查看，或
-     <a href="index.html">直接进入站点首页 →</a></p>
+  <h1>📸 页面索引</h1>
+  <p>下面是快照抓取的全部页面。想看某一页长什么样，直接点进去；<br>
+     想了解项目本身，去看 <a href="../index.html">项目介绍页 →</a></p>
 </div>
 <div class="wrap">
+  <a class="back" href="../index.html">← 返回项目介绍</a>
   <div class="tip">
     <b>⚠️ 这是静态快照，不是运行中的网站</b><br>
     页面样式、排版、评论楼中楼都是真实的渲染结果，但需要服务端的操作
@@ -610,20 +620,21 @@ class Command(BaseCommand):
         (output_dir / 'index-generated.html').write_text(index, encoding='utf-8')
 
         # 不再生成 preview.html：
-        # 预览目录页本身就直接列出所有页面并链过去，再套一层 iframe 反而多余，
+        # 预览索引页本身就直接列出所有页面并链过去，再套一层 iframe 反而多余，
         # 而且 iframe 的 src 需要运行时才知道（会留下未替换的占位符）。
 
     def _report(self, output_dir, written):
-        total_bytes = sum(f.stat().st_size for f in output_dir.rglob('*')
-                          if f.is_file() and 'static' not in f.parts)
         page_count = len(written)
+        rel = output_dir.name if output_dir != Path(settings.BASE_DIR) else '.'
         self.stdout.write(self.style.SUCCESS(
             f'\n快照生成完成\n'
             f'  输出目录 : {output_dir}\n'
             f'  页面数量 : {page_count} 个（另有 static/ 静态资源）\n'
-            f'\nGitHub Pages 地址（Source = main 分支 + 根目录时自动生效）：\n'
-            f'  https://<用户名>.github.io/<仓库名>/index-generated.html   ← 预览目录\n'
-            f'  https://<用户名>.github.io/<仓库名>/index.html             ← 站点首页\n'
-            f'\n本地预览：在输出目录里执行 python -m http.server 8080\n'
+            f'\n提交后 GitHub Pages 上的地址：\n'
+            f'  https://<用户名>.github.io/<仓库名>/                ← 项目介绍页（手写，不受本命令影响）\n'
+            f'  https://<用户名>.github.io/<仓库名>/app/index.html          ← 站点首页快照\n'
+            f'  https://<用户名>.github.io/<仓库名>/app/index-generated.html ← 全部页面索引\n'
+            f'\n本地预览：\n'
+            f'  python -m http.server 8080   （在 docs/ 上一层执行，然后打开 /docs/index.html）\n'
             f'\n改完记得提交：git add -A && git commit -m "chore: 更新静态预览" && git push\n'
         ))

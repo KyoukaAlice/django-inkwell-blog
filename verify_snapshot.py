@@ -6,15 +6,17 @@
   * 关键页面是否都在
   * 静态资源是否被正确引用
 
-    python verify_snapshot.py            # 校验仓库根目录（默认，快照就在这里）
-    python verify_snapshot.py docs       # 校验指定目录
+    python verify_snapshot.py               # 校验 docs/app/（默认，快照就在这里）
+    python verify_snapshot.py docs/app      # 显式指定
+    python verify_snapshot.py docs          # 连项目介绍页一起校验
 """
 import re
 import sys
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-SITE = Path(sys.argv[1] if len(sys.argv) > 1 else '.').resolve()
+DEFAULT_SITE = Path(__file__).resolve().parent / 'docs' / 'app'
+SITE = Path(sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SITE).resolve()
 
 LINK_RE = re.compile(r'\b(?:href|src)=(?P<q>["\'])(?P<url>[^"\']+)(?P=q)')
 CSS_URL_RE = re.compile(r'url\((?P<q>["\']?)(?P<url>[^"\')]+)(?P=q)\)')

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DjangoBlog 页面索引 · 静态快照</title>
+<style>
+  body { margin:0; font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+         background:#f4f6fa; color:#1b2434; line-height:1.7; }
+  .hero { background:linear-gradient(120deg,#0aa7e0,#fb7299); color:#fff; padding:40px 24px; }
+  .hero h1 { margin:0 0 8px; font-size:1.7rem; }
+  .hero p { margin:0; opacity:.95; max-width:760px; }
+  .hero a { color:#fff; }
+  .wrap { max-width:920px; margin:0 auto; padding:26px 24px 60px; }
+  .tip { background:#fff7e6; border:1px solid #f5d9a3; border-radius:12px; padding:14px 18px; margin-bottom:22px; font-size:.9rem; }
+  .back { display:inline-flex; align-items:center; gap:6px; margin-bottom:18px;
+          color:#0891c4; text-decoration:none; font-weight:600; font-size:.9rem; }
+  .back:hover { text-decoration:underline; }
+  ul { list-style:none; padding:0; margin:0; }
+  li { background:#fff; border:1px solid #e5e9f0; border-radius:10px; margin-bottom:8px; }
+  li a { display:block; padding:12px 16px; color:#0891c4; text-decoration:none; font-weight:600; }
+  li a:hover { background:#e6f7fe; border-radius:10px; }
+  code { color:#8b97ab; font-weight:400; font-size:.82rem; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>📸 页面索引</h1>
+  <p>下面是快照抓取的全部页面。想看某一页长什么样，直接点进去；<br>
+     想了解项目本身，去看 <a href="../index.html">项目介绍页 →</a></p>
+</div>
+<div class="wrap">
+  <a class="back" href="../index.html">← 返回项目介绍</a>
+  <div class="tip">
+    <b>⚠️ 这是静态快照，不是运行中的网站</b><br>
+    页面样式、排版、评论楼中楼都是真实的渲染结果，但需要服务端的操作
+    （登录、发文、点赞、发评论）不会生效 —— GitHub Pages 只能托管静态文件，跑不了 Django。
+    想看完整功能请按 README 在本地运行，或部署到支持 Python 的平台。
+  </div>
+  <ul>
+      <li><a href="index.html">首页</a> <code>index.html</code></li>
+      <li><a href="index-sort-hot.html">首页·最受欢迎</a> <code>index-sort-hot.html</code></li>
+      <li><a href="index-sort-views.html">首页·阅读最多</a> <code>index-sort-views.html</code></li>
+      <li><a href="search.html">搜索结果</a> <code>search.html</code></li>
+      <li><a href="tags.html">标签云</a> <code>tags.html</code></li>
+      <li><a href="about.html">关于本站</a> <code>about.html</code></li>
+      <li><a href="login.html">登录页</a> <code>login.html</code></li>
+      <li><a href="register.html">注册页</a> <code>register.html</code></li>
+      <li><a href="u-alice.html">用户主页</a> <code>u-alice.html</code></li>
+      <li><a href="404.html">404 页面</a> <code>404.html</code></li>
+      <li><a href="index-logged-in.html">首页（登录状态）</a> <code>index-logged-in.html</code></li>
+      <li><a href="profile.html">个人中心</a> <code>profile.html</code></li>
+      <li><a href="profile-drafts.html">个人中心·草稿</a> <code>profile-drafts.html</code></li>
+      <li><a href="profile-edit.html">编辑资料</a> <code>profile-edit.html</code></li>
+      <li><a href="notifications.html">通知中心</a> <code>notifications.html</code></li>
+      <li><a href="post-create.html">写文章</a> <code>post-create.html</code></li>
+      <li><a href="bookmarks.html">我的收藏</a> <code>bookmarks.html</code></li>
+      <li><a href="post/1/index.html">文章：Django 评论系统改造：从一级评论到 B 站式楼中楼</a> <code>post/1/index.html</code></li>
+      <li><a href="post/1/edit.html">编辑：Django 评论系统改造：从一级评论到 B 站式楼中楼</a> <code>post/1/edit.html</code></li>
+      <li><a href="post/1/delete.html">删除确认：Django 评论系统改造：从一级评论到 B 站式楼中楼</a> <code>post/1/delete.html</code></li>
+      <li><a href="post/2/index.html">文章：Django ORM 查询优化：把首页从 29 次查询降到 13 次</a> <code>post/2/index.html</code></li>
+      <li><a href="post/3/index.html">文章：用 Markdown 写博客正文：渲染 + 代码高亮 + XSS 防护</a> <code>post/3/index.html</code></li>
+      <li><a href="post/4/index.html">文章：毕业设计选题到答辩：一个博客系统能讲哪些技术点</a> <code>post/4/index.html</code></li>
+      <li><a href="post/4/edit.html">编辑：毕业设计选题到答辩：一个博客系统能讲哪些技术点</a> <code>post/4/edit.html</code></li>
+      <li><a href="post/4/delete.html">删除确认：毕业设计选题到答辩：一个博客系统能讲哪些技术点</a> <code>post/4/delete.html</code></li>
+      <li><a href="post/5/index.html">文章：Python 装饰器从入门到在 Django 里用起来</a> <code>post/5/index.html</code></li>
+      <li><a href="post/6/index.html">文章：我的 2026 学习计划：把基础打牢</a> <code>post/6/index.html</code></li>
+      <li><a href="u-admin.html">用户主页：admin</a> <code>u-admin.html</code></li>
+      <li><a href="u-alice.html">用户主页：alice</a> <code>u-alice.html</code></li>
+      <li><a href="u-bob.html">用户主页：bob</a> <code>u-bob.html</code></li>
+      <li><a href="tag-Django.html">标签：Django</a> <code>tag-Django.html</code></li>
+      <li><a href="tag-Markdown.html">标签：Markdown</a> <code>tag-Markdown.html</code></li>
+      <li><a href="tag-MySQL.html">标签：MySQL</a> <code>tag-MySQL.html</code></li>
+      <li><a href="tag-Python.html">标签：Python</a> <code>tag-Python.html</code></li>
+      <li><a href="tag-前端.html">标签：前端</a> <code>tag-前端.html</code></li>
+      <li><a href="tag-毕业设计.html">标签：毕业设计</a> <code>tag-毕业设计.html</code></li>
+      <li><a href="tag-算法.html">标签：算法</a> <code>tag-算法.html</code></li>
+      <li><a href="tag-运维.html">标签：运维</a> <code>tag-运维.html</code></li>
+      <li><a href="admin.html">后台首页</a> <code>admin.html</code></li>
+  </ul>
+</div>
+</body>
+</html>

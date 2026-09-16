@@ -1,763 +1,785 @@
 <!DOCTYPE html>
-
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0aa7e0">
-    <title>我的博客 - 首页</title>
-    <meta name="description" content="我的博客首页：最新发布的文章，支持分类、关键词与日期筛选。">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
-    <link rel="stylesheet" href="static/css/style.css">
-    
-    <script>
-        // 提前应用主题，避免深色模式下的白色闪屏
-        (function () {
-            var saved = localStorage.getItem('djangoblog-theme');
-            if (!saved) {
-                saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-                    ? 'dark' : 'light';
-            }
-            document.documentElement.setAttribute('data-theme', saved);
-        })();
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DjangoBlog · 基于 Django 的博客系统（B 站式评论互动）</title>
+<meta name="description" content="毕业设计项目：基于 Django 4.2 的个人博客系统，实现了 B 站式楼中楼评论、Markdown 写作与代码高亮、点赞收藏、站内通知与响应式深色主题界面。">
+<meta name="author" content="KyoukaAlice">
+<meta property="og:title" content="DjangoBlog · 基于 Django 的博客系统">
+<meta property="og:description" content="B 站式楼中楼评论 · Markdown 写作 · 点赞收藏 · 站内通知 · 深色主题">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+<style>
+/* ==========================================================================
+   项目介绍页 —— 独立样式，不引用博客的 style.css。
+   颜色刻意和博客保持一致（品牌色 #0aa7e0 / 强调色 #fb7299），
+   这样介绍页和快照看起来是同一个项目。
+   ========================================================================== */
+:root {
+    --brand: #0aa7e0;
+    --brand-dark: #0891c4;
+    --accent: #fb7299;
+    --bg: #f4f6fa;
+    --surface: #ffffff;
+    --surface-2: #fafbfd;
+    --border: #e5e9f0;
+    --text: #16202f;
+    --text-2: #55617a;
+    --text-3: #8b97ab;
+    --code-bg: #f5f8fc;
+    --radius: 14px;
+    --shadow: 0 6px 22px rgba(20, 32, 55, .07);
+    --shadow-lg: 0 18px 46px rgba(20, 32, 55, .13);
+    --header-h: 58px;
+}
+html[data-theme="dark"] {
+    --brand: #2bb8f0;
+    --brand-dark: #48c6f5;
+    --accent: #fb7299;
+    --bg: #151a23;
+    --surface: #1e2431;
+    --surface-2: #232a39;
+    --border: #2c3444;
+    --text: #e8edf6;
+    --text-2: #a8b4c8;
+    --text-3: #78859c;
+    --code-bg: #171d28;
+    --shadow: 0 6px 22px rgba(0, 0, 0, .4);
+    --shadow-lg: 0 18px 46px rgba(0, 0, 0, .55);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 16px); }
+body {
+    background: var(--bg); color: var(--text); line-height: 1.75;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+a { color: var(--brand); text-decoration: none; }
+a:hover { color: var(--brand-dark); }
+code, pre { font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace; }
+img { max-width: 100%; }
+
+/* ---- 顶栏 ---- */
+.nav {
+    position: fixed; inset: 0 0 auto 0; height: var(--header-h); z-index: 100;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--border);
+}
+@supports not (backdrop-filter: blur(1px)) { .nav { background: var(--surface); } }
+.nav-inner {
+    max-width: 1080px; height: 100%; margin: 0 auto; padding: 0 22px;
+    display: flex; align-items: center; gap: 20px;
+}
+.nav-logo { display: flex; align-items: center; gap: 9px; font-weight: 800; color: var(--text); font-size: 1.02rem; }
+.nav-logo .mark {
+    width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 16px;
+    background: linear-gradient(135deg, var(--brand), var(--accent));
+}
+.nav-links { display: flex; gap: 2px; margin-left: auto; flex-wrap: wrap; }
+.nav-links a { padding: 6px 12px; border-radius: 999px; font-size: .86rem; font-weight: 600; color: var(--text-2); }
+.nav-links a:hover { background: var(--surface-2); color: var(--brand); }
+.theme-btn {
+    width: 34px; height: 34px; border-radius: 999px; border: none; cursor: pointer;
+    background: var(--surface-2); color: var(--text-2); display: grid; place-items: center; flex: none;
+}
+.theme-btn:hover { color: var(--brand); }
+@media (max-width: 900px) { .nav-links { display: none; } }
+
+/* ---- Hero ---- */
+.hero {
+    padding: calc(var(--header-h) + 64px) 22px 56px;
+    background:
+        radial-gradient(820px 420px at 12% -10%, color-mix(in srgb, var(--brand) 20%, transparent), transparent 62%),
+        radial-gradient(700px 400px at 92% 4%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%);
+}
+.hero-inner { max-width: 1080px; margin: 0 auto; }
+.badge {
+    display: inline-flex; align-items: center; gap: 7px; padding: 5px 14px; border-radius: 999px;
+    background: color-mix(in srgb, var(--brand) 14%, transparent); color: var(--brand-dark);
+    font-size: .82rem; font-weight: 700; margin-bottom: 18px;
+}
+.hero h1 { font-size: clamp(1.7rem, 4.2vw, 2.6rem); line-height: 1.32; letter-spacing: -.8px; margin-bottom: 16px; }
+.hero h1 .hl {
+    background: linear-gradient(120deg, var(--brand), var(--accent));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero .lead { font-size: 1.03rem; color: var(--text-2); max-width: 780px; margin-bottom: 26px; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 40px; }
+.btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border-radius: 999px;
+    font-weight: 700; font-size: .93rem; border: 1px solid transparent; transition: .18s;
+}
+.btn-primary { background: var(--brand); color: #fff; box-shadow: 0 4px 14px color-mix(in srgb, var(--brand) 34%, transparent); }
+.btn-primary:hover { background: var(--brand-dark); color: #fff; transform: translateY(-2px); }
+.btn-ghost { background: var(--surface); color: var(--text-2); border-color: var(--border); }
+.btn-ghost:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-2px); }
+.hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; max-width: 800px; }
+.hero-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+.hero-stat b { display: block; font-size: 1.5rem; font-weight: 800; letter-spacing: -.6px; color: var(--brand); }
+.hero-stat span { font-size: .8rem; color: var(--text-3); }
+
+/* ---- 通用区块 ---- */
+section { padding: 58px 22px; }
+.section-inner { max-width: 1080px; margin: 0 auto; }
+.sec-tag { font-size: .78rem; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--brand); margin-bottom: 8px; }
+h2 { font-size: clamp(1.35rem, 3vw, 1.75rem); letter-spacing: -.5px; margin-bottom: 10px; }
+.sec-desc { color: var(--text-2); max-width: 760px; margin-bottom: 34px; }
+section.alt { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+.grid { display: grid; gap: 16px; }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+.card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 22px; box-shadow: var(--shadow); transition: .2s;
+}
+section.alt .card { background: var(--surface-2); }
+.card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); }
+.card .ico { font-size: 1.4rem; margin-bottom: 10px; display: block; }
+.card h3 { font-size: 1rem; margin-bottom: 8px; }
+.card p { font-size: .89rem; color: var(--text-2); }
+.card ul { margin: 10px 0 0; padding-left: 18px; font-size: .86rem; color: var(--text-2); }
+.card li { margin-bottom: 4px; }
+.card li::marker { color: var(--brand); }
+
+/* ---- 评论系统界面复刻 ---- */
+.demo-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 22px; align-items: start; }
+.mock {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; box-shadow: var(--shadow); font-size: .86rem;
+}
+.mock-head { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 14px; font-weight: 700; }
+.mock-head .n { color: var(--text-3); font-weight: 500; font-size: .82rem; }
+.mock-head .sorts { margin-left: auto; font-size: .8rem; color: var(--text-3); font-weight: 500; }
+.reply-hint {
+    background: color-mix(in srgb, var(--brand) 12%, transparent); color: var(--brand-dark);
+    border-radius: 8px; padding: 7px 12px; font-size: .8rem; margin-bottom: 10px;
+}
+.mock-editor { border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.mock-editor .ta { padding: 12px; color: var(--text-3); min-height: 62px; font-size: .85rem; }
+.mock-editor .bar {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    border-top: 1px solid var(--border); background: var(--surface); color: var(--text-3); font-size: .78rem;
+}
+.mock-editor .bar .send { margin-left: auto; background: var(--brand); color: #fff; padding: 5px 14px; border-radius: 999px; font-weight: 700; }
+.cmt { display: flex; gap: 11px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.cmt:last-child { border-bottom: none; }
+.av {
+    width: 34px; height: 34px; border-radius: 999px; flex: none; display: grid; place-items: center;
+    color: #fff; font-weight: 800; font-size: .82rem;
+}
+.av.a { background: #8b5cf6; } .av.b { background: #0aa7e0; } .av.c { background: #f59e0b; } .av.d { background: #10b981; }
+.cmt-body { min-width: 0; flex: 1; }
+.cmt-name { display: flex; align-items: center; gap: 7px; font-size: .84rem; font-weight: 700; color: var(--text-2); }
+.up { background: linear-gradient(135deg, var(--accent), #ff9a3c); color: #fff; font-size: .65rem; padding: 1px 7px; border-radius: 999px; }
+.floor { margin-left: auto; color: var(--text-3); font-weight: 500; font-size: .76rem; }
+.cmt-text { font-size: .88rem; margin: 4px 0 7px; }
+.cmt-text .at { color: var(--brand); font-weight: 600; }
+.cmt-foot { display: flex; gap: 16px; color: var(--text-3); font-size: .78rem; }
+.cmt-foot .liked { color: var(--accent); font-weight: 700; }
+.replies { margin-top: 10px; padding-left: 12px; border-left: 2px solid var(--border); background: var(--surface-2); border-radius: 4px; }
+.replies .cmt { padding: 10px 12px 10px 0; }
+.replies .av { width: 28px; height: 28px; font-size: .72rem; }
+.more { color: var(--brand); font-size: .8rem; font-weight: 700; padding: 6px 0 2px 12px; display: inline-block; }
+
+/* ---- 代码 ---- */
+pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; font-size: .84rem; line-height: 1.7; margin: 14px 0 0;
+}
+pre .c { color: var(--text-3); }
+pre .k { color: #a626a4; }
+pre .s { color: #50a14f; }
+pre .f { color: #4078f2; }
+pre .muted { color: var(--text-3); }
+html[data-theme="dark"] pre .k { color: #c678dd; }
+html[data-theme="dark"] pre .s { color: #98c379; }
+html[data-theme="dark"] pre .f { color: #61afef; }
+:not(pre) > code {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 5px;
+    padding: 1px 6px; font-size: .86em; color: var(--accent);
+}
+
+/* ---- 架构分层 ---- */
+.layer { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+.layer h4 { font-size: .95rem; margin-bottom: 4px; }
+.layer .role { font-size: .78rem; color: var(--brand); font-weight: 700; margin-bottom: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: .82rem; color: var(--text-2); }
+.arrow { text-align: center; color: var(--text-3); font-size: 1.4rem; line-height: 1; padding: 10px 0; }
+
+/* ---- 表格 ---- */
+table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; font-size: .89rem; }
+th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: var(--surface-2); font-weight: 700; }
+tr:last-child td { border-bottom: none; }
+td:first-child { color: var(--text-2); white-space: nowrap; }
+
+/* ---- 页脚 ---- */
+footer { background: var(--surface); border-top: 1px solid var(--border); padding: 34px 22px; }
+.footer-inner { max-width: 1080px; margin: 0 auto; display: flex; justify-content: space-between; gap: 22px; flex-wrap: wrap; font-size: .86rem; color: var(--text-3); }
+.footer-inner a { font-weight: 600; }
+.note {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+    border-radius: 10px; padding: 14px 18px; font-size: .88rem; color: var(--text-2); margin-bottom: 22px;
+}
+</style>
 </head>
 <body>
+<script>
+    // 主题：跟随系统，可手动切换并记住
+    (function () {
+        var saved = localStorage.getItem('djangoblog-intro-theme');
+        if (!saved) {
+            saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', saved);
+    })();
+</script>
 
+<nav class="nav">
+    <div class="nav-inner">
+        <a class="nav-logo" href="#top"><span class="mark">📝</span> DjangoBlog</a>
+        <div class="nav-links">
+            <a href="#features">功能特性</a>
+            <a href="#comments">评论系统</a>
+            <a href="#flow">处理流程</a>
+            <a href="#stack">技术栈</a>
+            <a href="#arch">系统架构</a>
+            <a href="#quality">工程质量</a>
+            <a href="#start">快速开始</a>
+            <a href="app/index.html">界面预览</a>
+        </div>
+        <button class="theme-btn" id="themeBtn" title="切换深色/浅色" aria-label="切换主题"></button>
+    </div>
+</nav>
 
-<header class="header">
-    <div class="header-inner">
-        <a href="index.html" class="logo">
-            <span class="logo-mark">📝</span>
-            <span>我的博客<small>Django 博客系统</small></span>
-        </a>
+<a id="top"></a>
 
-        <button class="icon-btn menu-toggle" title="菜单" aria-label="展开菜单">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-        </button>
-
-        <nav class="nav">
-            <a href="index.html" class="active">首页</a>
-            <a href="tags.html" class="">标签</a>
-            <a href="about.html" class="">关于</a>
-            
-        </nav>
-
-        <div class="header-actions">
-            <form class="search-mini hide-sm" method="get" action="search.html" role="search">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-                <input type="search" name="keyword" placeholder="搜索文章…" value="" aria-label="搜索">
-            </form>
-
-            <button class="icon-btn theme-toggle" title="切换主题" aria-label="切换深色/浅色模式"></button>
-
-            
-                <a href="login.html" class="btn btn-ghost btn-sm">登录</a>
-                <a href="register.html" class="btn btn-primary btn-sm hide-sm">注册</a>
-            
+<!-- ============ Hero ============ -->
+<header class="hero">
+    <div class="hero-inner">
+        <span class="badge">🎓 毕业设计项目 · 已开源</span>
+        <h1>基于 Django 的<span class="hl">个人博客系统</span><br>带 B 站式楼中楼评论互动</h1>
+        <p class="lead">
+            不只是「文章列表 + 详情页」的基础博客：评论模块按 B 站的交互重做，
+            支持楼中楼嵌套、评论点赞、表情与配图；正文用 Markdown 写作并渲染成带代码高亮的排版；
+            另有点赞收藏、站内通知、标签归档、全文搜索与响应式深色主题界面。
+        </p>
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="app/index.html">查看界面预览 →</a>
+            <a class="btn btn-ghost" href="app/index-generated.html">全部页面索引</a>
+            <a class="btn btn-ghost" href="#start">本地运行</a>
+        </div>
+        <div class="hero-stats">
+            <div class="hero-stat"><b>8</b><span>数据模型</span></div>
+            <div class="hero-stat"><b>88</b><span>单元测试</span></div>
+            <div class="hero-stat"><b>9</b><span>类型化数据集</span></div>
+            <div class="hero-stat"><b>Django 4.2</b><span>Web 框架</span></div>
         </div>
     </div>
 </header>
 
-
-<div class="wrap">
-    <main class="main">
-        
-
-        
-<div class="page-head">
-    <div class="page-head-bar">
-        <div>
-            <h1>
-                
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h11l3 3v13.5a.5.5 0 0 1-.5.5h-15a.5.5 0 0 1-.5-.5z"/><path d="M8 7h6M8 11h8M8 15h5"/></svg>
-                最新文章
-                
-            </h1>
-            <p>
-                共 6 篇文章
-                
-                
-            </p>
-        </div>
-        
-    </div>
-</div>
-
-
-<details class="filter-bar" >
-    <summary class="flex items-center justify-between gap-10" style="cursor: pointer;">
-        <span class="bold text-2 flex items-center gap-6">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
-            筛选条件
-        </span>
-        <span class="text-xs text-3">点击展开 / 收起</span>
-    </summary>
-
-    <form method="get" action="index.html" class="mt-16">
-        <input type="hidden" name="sort" value="new">
-        
-
-        <div class="filter-grid">
-            <div class="filter-field">
-                <label for="filter-category">分类</label>
-                <select id="filter-category" name="category">
-                    <option value="">全部分类</option>
-                    
-                    <option value="3" >学习路线</option>
-                    
-                    <option value="4" >生活随笔</option>
-                    
-                    <option value="1" >技术笔记</option>
-                    
-                    <option value="2" >项目实战</option>
-                    
-                </select>
+<!-- ============ 项目概览 ============ -->
+<section>
+    <div class="section-inner">
+        <div class="sec-tag">Overview</div>
+        <h2>项目概览</h2>
+        <p class="sec-desc">
+            一个功能完整的单体 Django 应用：服务端渲染为主 + 少量 AJAX 局部刷新，
+            不依赖任何前端框架与构建工具，克隆下来装完依赖就能跑。
+        </p>
+        <div class="grid grid-3">
+            <div class="card">
+                <span class="ico">🧩</span>
+                <h3>完整的业务闭环</h3>
+                <p>从注册登录、写作发布、分类标签，到阅读互动、消息通知、个人中心，
+                    博客该有的环节都跑通了，没有半成品页面。</p>
             </div>
-
-            <div class="filter-field">
-                <label for="filter-keyword">关键词</label>
-                <input id="filter-keyword" type="search" name="keyword" value="" placeholder="标题 / 正文 / 标签…">
+            <div class="card">
+                <span class="ico">⚙️</span>
+                <h3>零构建的前端</h3>
+                <p>原生 HTML / CSS / JavaScript，一份设计系统 CSS 管理全站样式，
+                    <b>没有 npm、没有打包步骤</b>，改完刷新即可看到效果。</p>
             </div>
-
-            <div class="filter-field">
-                <label for="filter-start">开始日期</label>
-                <input id="filter-start" type="date" name="start_date" value="">
-            </div>
-
-            <div class="filter-field">
-                <label for="filter-end">结束日期</label>
-                <input id="filter-end" type="date" name="end_date" value="">
+            <div class="card">
+                <span class="ico">🗄️</span>
+                <h3>MySQL / SQLite 双支持</h3>
+                <p>默认走 MySQL，设一个环境变量即可切到 SQLite，
+                    <b>迁移与代码完全兼容</b>，方便在没有数据库的机器上演示。</p>
             </div>
         </div>
-
-        <div class="flex items-center gap-10 wrap-gap mt-16">
-            <button type="submit" class="btn btn-primary btn-sm">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-                筛选
-            </button>
-            <a href="index.html" class="btn btn-ghost btn-sm">重置</a>
-        </div>
-    </form>
-</details>
-
-
-
-
-
-<div class="flex items-center justify-between wrap-gap gap-10 mb-16">
-    <div class="sort-bar">
-        
-        <a href="?sort=new" class="active">最新发布</a>
-        
-        <a href="?sort=hot" class="">最受欢迎</a>
-        
-        <a href="?sort=views" class="">阅读最多</a>
-        
-        <a href="?sort=discussed" class="">评论最多</a>
-        
     </div>
-    <span class="text-xs text-3">第 1 / 1 页</span>
-</div>
+</section>
 
-<div class="post-list">
-    
-        
-
-<article class="post-card no-cover">
-    <div class="post-card-body">
-        <h2><a href="post/6/index.html">我的 2026 学习计划：把基础打牢</a></h2>
-
-        <div class="post-meta">
-            <a class="author-link" href="u-bob.html">
-                
-
-    
-        <span class="avatar avatar-xs" style="background: #10b981;" title="bob">B</span>
-    
-
-
-                鲍勃
-            </a>
-            <span class="m">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                2026-09-16
-            </span>
-            
-            <a class="m" href="index.html?category=4">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                生活随笔
-            </a>
-            
-            <span class="m">1 分钟读完</span>
-            
-        </div>
-
-        <p class="excerpt" style="margin-top: 10px;">不追新框架，先把 Python、数据库和网络补扎实。</p>
-
-        
-        <div class="tag-cloud" style="margin-top: 11px;">
-            
-                <a class="tag-chip" href="tag-毕业设计.html"># 毕业设计</a>
-            
-        </div>
-        
-
-        <div class="flex items-center justify-between wrap-gap gap-10" style="margin-top: 14px;">
-            <div class="post-stats">
-                <span class="s" title="阅读量">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                    367
-                </span>
-                <span class="s" title="点赞">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 22V11l5-9a2 2 0 0 1 2 2v5h5.5a2 2 0 0 1 2 2.3l-1.3 8a2 2 0 0 1-2 1.7z"/><path d="M2 12h5v10H2z"/></svg>
-                    2
-                </span>
-                <span class="s" title="评论">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-7.6-4.2L3 21l1.3-3.9A8.5 8.5 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg>
-                    0
-                </span>
+<!-- ============ 功能特性 ============ -->
+<section class="alt" id="features">
+    <div class="section-inner">
+        <div class="sec-tag">Features</div>
+        <h2>功能特性</h2>
+        <p class="sec-desc">按模块划分，每一条都对应仓库里的真实实现，不是规划中的功能。</p>
+        <div class="grid grid-3">
+            <div class="card">
+                <span class="ico">💬</span>
+                <h3>B 站式评论互动</h3>
+                <ul>
+                    <li>楼中楼嵌套，任意深度压平为两级展示</li>
+                    <li>评论点赞（可取消）+「xx 人觉得很赞」</li>
+                    <li>38 个表情面板，纯表情评论自动放大</li>
+                    <li>评论配图，点击看大图</li>
+                    <li>最热 / 最新排序、楼层分页</li>
+                    <li>软删除保留楼层占位、15 秒防刷屏</li>
+                    <li>AJAX 无刷新，无 JS 时表单仍可用</li>
+                </ul>
             </div>
-            <a href="post/6/index.html" class="btn btn-ghost btn-sm">阅读全文 →</a>
-        </div>
-    </div>
-
-    
-</article>
-
-    
-        
-
-<article class="post-card no-cover">
-    <div class="post-card-body">
-        <h2><a href="post/5/index.html">Python 装饰器从入门到在 Django 里用起来</a></h2>
-
-        <div class="post-meta">
-            <a class="author-link" href="u-alice.html">
-                
-
-    
-        <span class="avatar avatar-xs" style="background: #ec4899;" title="alice">A</span>
-    
-
-
-                爱丽丝
-            </a>
-            <span class="m">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                2026-09-16
-            </span>
-            
-            <a class="m" href="index.html?category=1">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                技术笔记
-            </a>
-            
-            <span class="m">2 分钟读完</span>
-            
-        </div>
-
-        <p class="excerpt" style="margin-top: 10px;">装饰器本质就是「接收函数、返回函数」，理解了这一点，Django 的 login_required 也就不神秘了。</p>
-
-        
-        <div class="tag-cloud" style="margin-top: 11px;">
-            
-                <a class="tag-chip" href="tag-Django.html"># Django</a>
-            
-                <a class="tag-chip" href="tag-Python.html"># Python</a>
-            
-        </div>
-        
-
-        <div class="flex items-center justify-between wrap-gap gap-10" style="margin-top: 14px;">
-            <div class="post-stats">
-                <span class="s" title="阅读量">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                    237
-                </span>
-                <span class="s" title="点赞">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 22V11l5-9a2 2 0 0 1 2 2v5h5.5a2 2 0 0 1 2 2.3l-1.3 8a2 2 0 0 1-2 1.7z"/><path d="M2 12h5v10H2z"/></svg>
-                    0
-                </span>
-                <span class="s" title="评论">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-7.6-4.2L3 21l1.3-3.9A8.5 8.5 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg>
-                    0
-                </span>
+            <div class="card">
+                <span class="ico">✍️</span>
+                <h3>Markdown 写作</h3>
+                <ul>
+                    <li>正文写 Markdown，渲染成专业排版</li>
+                    <li>代码块 Pygments 语法高亮</li>
+                    <li>表格 / 引用 / 脚注 / 中文标题锚点</li>
+                    <li>bleach 白名单过滤，防 XSS</li>
+                    <li>渲染结果缓存，正文没改就复用</li>
+                    <li>封面图、摘要、标签一并管理</li>
+                </ul>
             </div>
-            <a href="post/5/index.html" class="btn btn-ghost btn-sm">阅读全文 →</a>
-        </div>
-    </div>
-
-    
-</article>
-
-    
-        
-
-<article class="post-card no-cover">
-    <div class="post-card-body">
-        <h2><a href="post/4/index.html">毕业设计选题到答辩：一个博客系统能讲哪些技术点</a></h2>
-
-        <div class="post-meta">
-            <a class="author-link" href="u-admin.html">
-                
-
-    
-        <span class="avatar avatar-xs" style="background: #8b5cf6;" title="admin">A</span>
-    
-
-
-                站长
-            </a>
-            <span class="m">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                2026-09-16
-            </span>
-            
-            <a class="m" href="index.html?category=3">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                学习路线
-            </a>
-            
-            <span class="m">1 分钟读完</span>
-            
-        </div>
-
-        <p class="excerpt" style="margin-top: 10px;">博客系统看起来简单，但把评论、权限、ORM 优化、通知这些做扎实，答辩时能讲的内容非常多。</p>
-
-        
-        <div class="tag-cloud" style="margin-top: 11px;">
-            
-                <a class="tag-chip" href="tag-Django.html"># Django</a>
-            
-                <a class="tag-chip" href="tag-MySQL.html"># MySQL</a>
-            
-                <a class="tag-chip" href="tag-毕业设计.html"># 毕业设计</a>
-            
-        </div>
-        
-
-        <div class="flex items-center justify-between wrap-gap gap-10" style="margin-top: 14px;">
-            <div class="post-stats">
-                <span class="s" title="阅读量">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                    426
-                </span>
-                <span class="s" title="点赞">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 22V11l5-9a2 2 0 0 1 2 2v5h5.5a2 2 0 0 1 2 2.3l-1.3 8a2 2 0 0 1-2 1.7z"/><path d="M2 12h5v10H2z"/></svg>
-                    2
-                </span>
-                <span class="s" title="评论">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-7.6-4.2L3 21l1.3-3.9A8.5 8.5 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg>
-                    0
-                </span>
+            <div class="card">
+                <span class="ico">👍</span>
+                <h3>点赞 · 点踩 · 收藏</h3>
+                <ul>
+                    <li>一人一票，再点同一个按钮即取消</li>
+                    <li>赞与踩互斥，数据库层面保证唯一</li>
+                    <li>数字实时更新，k / w 单位显示</li>
+                    <li>收藏在个人主页独立成 Tab</li>
+                </ul>
             </div>
-            <a href="post/4/index.html" class="btn btn-ghost btn-sm">阅读全文 →</a>
-        </div>
-    </div>
-
-    
-</article>
-
-    
-        
-
-<article class="post-card no-cover">
-    <div class="post-card-body">
-        <h2><a href="post/3/index.html">用 Markdown 写博客正文：渲染 + 代码高亮 + XSS 防护</a></h2>
-
-        <div class="post-meta">
-            <a class="author-link" href="u-bob.html">
-                
-
-    
-        <span class="avatar avatar-xs" style="background: #10b981;" title="bob">B</span>
-    
-
-
-                鲍勃
-            </a>
-            <span class="m">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                2026-09-16
-            </span>
-            
-            <a class="m" href="index.html?category=1">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                技术笔记
-            </a>
-            
-            <span class="m">2 分钟读完</span>
-            
-        </div>
-
-        <p class="excerpt" style="margin-top: 10px;">正文存 Markdown，展示时渲染成 HTML，再用白名单过滤一遍，既好看又安全。</p>
-
-        
-        <div class="tag-cloud" style="margin-top: 11px;">
-            
-                <a class="tag-chip" href="tag-Markdown.html"># Markdown</a>
-            
-                <a class="tag-chip" href="tag-Python.html"># Python</a>
-            
-                <a class="tag-chip" href="tag-前端.html"># 前端</a>
-            
-        </div>
-        
-
-        <div class="flex items-center justify-between wrap-gap gap-10" style="margin-top: 14px;">
-            <div class="post-stats">
-                <span class="s" title="阅读量">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                    70
-                </span>
-                <span class="s" title="点赞">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 22V11l5-9a2 2 0 0 1 2 2v5h5.5a2 2 0 0 1 2 2.3l-1.3 8a2 2 0 0 1-2 1.7z"/><path d="M2 12h5v10H2z"/></svg>
-                    2
-                </span>
-                <span class="s" title="评论">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-7.6-4.2L3 21l1.3-3.9A8.5 8.5 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg>
-                    0
-                </span>
+            <div class="card">
+                <span class="ico">🔔</span>
+                <h3>站内通知</h3>
+                <ul>
+                    <li>评论 / 回复 / 点赞 / 收藏 / 评论被赞 五类</li>
+                    <li>导航栏铃铛未读小红点</li>
+                    <li>点击跳转到对应评论并高亮</li>
+                    <li>不会给自己发通知</li>
+                </ul>
             </div>
-            <a href="post/3/index.html" class="btn btn-ghost btn-sm">阅读全文 →</a>
-        </div>
-    </div>
-
-    
-</article>
-
-    
-        
-
-<article class="post-card no-cover">
-    <div class="post-card-body">
-        <h2><a href="post/2/index.html">Django ORM 查询优化：把首页从 29 次查询降到 13 次</a></h2>
-
-        <div class="post-meta">
-            <a class="author-link" href="u-alice.html">
-                
-
-    
-        <span class="avatar avatar-xs" style="background: #ec4899;" title="alice">A</span>
-    
-
-
-                爱丽丝
-            </a>
-            <span class="m">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                2026-09-16
-            </span>
-            
-            <a class="m" href="index.html?category=1">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                技术笔记
-            </a>
-            
-            <span class="m">2 分钟读完</span>
-            
-        </div>
-
-        <p class="excerpt" style="margin-top: 10px;">模板里一句 post.author.profile.bio，就可能悄悄多出 N 次查询。用 select_related 和 Prefetch 一次搞定。</p>
-
-        
-        <div class="tag-cloud" style="margin-top: 11px;">
-            
-                <a class="tag-chip" href="tag-Django.html"># Django</a>
-            
-                <a class="tag-chip" href="tag-MySQL.html"># MySQL</a>
-            
-                <a class="tag-chip" href="tag-Python.html"># Python</a>
-            
-        </div>
-        
-
-        <div class="flex items-center justify-between wrap-gap gap-10" style="margin-top: 14px;">
-            <div class="post-stats">
-                <span class="s" title="阅读量">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                    287
-                </span>
-                <span class="s" title="点赞">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 22V11l5-9a2 2 0 0 1 2 2v5h5.5a2 2 0 0 1 2 2.3l-1.3 8a2 2 0 0 1-2 1.7z"/><path d="M2 12h5v10H2z"/></svg>
-                    1
-                </span>
-                <span class="s" title="评论">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-7.6-4.2L3 21l1.3-3.9A8.5 8.5 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg>
-                    0
-                </span>
+            <div class="card">
+                <span class="ico">🔍</span>
+                <h3>检索与归档</h3>
+                <ul>
+                    <li>全文搜索：标题 / 正文 / 摘要 / 标签 / 作者</li>
+                    <li>分类、标签、日期区间组合筛选</li>
+                    <li>最新 / 最热 / 阅读最多 / 评论最多 排序</li>
+                    <li>筛选条件在翻页时保留</li>
+                </ul>
             </div>
-            <a href="post/2/index.html" class="btn btn-ghost btn-sm">阅读全文 →</a>
-        </div>
-    </div>
-
-    
-</article>
-
-    
-        
-
-<article class="post-card no-cover">
-    <div class="post-card-body">
-        <h2><a href="post/1/index.html">Django 评论系统改造：从一级评论到 B 站式楼中楼</a></h2>
-
-        <div class="post-meta">
-            <a class="author-link" href="u-admin.html">
-                
-
-    
-        <span class="avatar avatar-xs" style="background: #8b5cf6;" title="admin">A</span>
-    
-
-
-                站长
-            </a>
-            <span class="m">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                2026-09-16
-            </span>
-            
-            <a class="m" href="index.html?category=2">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                项目实战
-            </a>
-            
-            <span class="m">3 分钟读完</span>
-            
-        </div>
-
-        <p class="excerpt" style="margin-top: 10px;">把只能回复一层的评论系统，改造成支持楼中楼、点赞、表情、配图和排序的完整互动模块。</p>
-
-        
-        <div class="tag-cloud" style="margin-top: 11px;">
-            
-                <a class="tag-chip" href="tag-Django.html"># Django</a>
-            
-                <a class="tag-chip" href="tag-Python.html"># Python</a>
-            
-                <a class="tag-chip" href="tag-毕业设计.html"># 毕业设计</a>
-            
-        </div>
-        
-
-        <div class="flex items-center justify-between wrap-gap gap-10" style="margin-top: 14px;">
-            <div class="post-stats">
-                <span class="s" title="阅读量">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                    125
-                </span>
-                <span class="s" title="点赞">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 22V11l5-9a2 2 0 0 1 2 2v5h5.5a2 2 0 0 1 2 2.3l-1.3 8a2 2 0 0 1-2 1.7z"/><path d="M2 12h5v10H2z"/></svg>
-                    2
-                </span>
-                <span class="s" title="评论">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-7.6-4.2L3 21l1.3-3.9A8.5 8.5 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg>
-                    7
-                </span>
+            <div class="card">
+                <span class="ico">👤</span>
+                <h3>用户与权限</h3>
+                <ul>
+                    <li>用户主页：文章 / 收藏 Tab + 数据统计</li>
+                    <li>头像三级兜底（上传 → 外链 → 首字母色块）</li>
+                    <li>个性签名、所在地、社交链接</li>
+                    <li>个人中心：数据概览 + 文章管理</li>
+                    <li>三档权限：作者 / 楼主 / 普通访客</li>
+                </ul>
             </div>
-            <a href="post/1/index.html" class="btn btn-ghost btn-sm">阅读全文 →</a>
+            <div class="card">
+                <span class="ico">🎨</span>
+                <h3>界面与体验</h3>
+                <ul>
+                    <li>CSS 变量设计系统，浅色 / 深色一键切换</li>
+                    <li>全站响应式（双栏 ↔ 单栏 ↔ 移动端）</li>
+                    <li>阅读进度条、自动目录与滚动高亮</li>
+                    <li>内联 SVG 图标，断网也不缺图</li>
+                </ul>
+            </div>
+            <div class="card">
+                <span class="ico">🛠️</span>
+                <h3>后台管理</h3>
+                <ul>
+                    <li>9 个模型全部注册进 Django Admin</li>
+                    <li>评论内联到文章编辑页</li>
+                    <li>评论批量「标记删除 / 恢复显示」</li>
+                    <li>列表页显示点赞数、内容预览等</li>
+                </ul>
+            </div>
+            <div class="card">
+                <span class="ico">🧪</span>
+                <h3>工程质量</h3>
+                <ul>
+                    <li>88 个单元测试覆盖核心逻辑</li>
+                    <li>查询次数写成回归测试（防 N+1）</li>
+                    <li>一键脚本：建环境 / 启动 / 管理命令</li>
+                    <li>静态快照 + 链接完整性校验</li>
+                </ul>
+            </div>
         </div>
     </div>
+</section>
 
-    
-</article>
+<!-- ============ 评论系统 ============ -->
+<section id="comments">
+    <div class="section-inner">
+        <div class="sec-tag">Comment System</div>
+        <h2>评论系统是怎么做的</h2>
+        <p class="sec-desc">
+            这是整个项目投入最多的地方。左侧是按真实渲染结果复刻的评论界面，
+            右侧是它背后的数据结构。
+        </p>
 
-    
-</div>
+        <div class="demo-split">
+            <!-- 界面复刻 -->
+            <div class="mock">
+                <div class="mock-head">💬 评论 <span class="n">共 3 条</span>
+                    <span class="sorts">🔥 最热 · 🕒 最新</span>
+                </div>
 
+                <div class="reply-hint">正在回复 <b>@爱丽丝</b> &nbsp;✕</div>
 
+                <div class="mock-editor">
+                    <div class="ta">发一条友善的评论吧～</div>
+                    <div class="bar">
+                        <span>😊</span><span>🖼️</span>
+                        <span style="margin-left:auto">0 / 1000</span>
+                        <span class="send">发送评论</span>
+                    </div>
+                </div>
 
+                <div class="cmt">
+                    <span class="av a">爱</span>
+                    <div class="cmt-body">
+                        <div class="cmt-name">爱丽丝 <span class="floor">#3 · 2 小时前</span></div>
+                        <div class="cmt-text">楼中楼那段我看了两遍才懂，感谢分享！</div>
+                        <div class="cmt-foot"><span class="liked">❤ 2</span><span>回复</span></div>
 
+                        <div class="replies">
+                            <div class="cmt">
+                                <span class="av b">站</span>
+                                <div class="cmt-body">
+                                    <div class="cmt-name">站长 <span class="up">UP主</span>
+                                        <span class="floor">1 小时前</span></div>
+                                    <div class="cmt-text"><span class="at">@爱丽丝</span> 关键是 root 字段把整棵子树串起来了</div>
+                                    <div class="cmt-foot"><span class="liked">❤ 1</span><span>回复</span></div>
+                                </div>
+                            </div>
+                            <div class="cmt">
+                                <span class="av d">鲍</span>
+                                <div class="cmt-body">
+                                    <div class="cmt-name">鲍勃 <span class="floor">30 分钟前</span></div>
+                                    <div class="cmt-text"><span class="at">@爱丽丝</span> 同感，收藏了 👍</div>
+                                    <div class="cmt-foot"><span>❤ 0</span><span>回复</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="more">展开另外 2 条回复 ⌄</span>
+                    </div>
+                </div>
 
+                <div class="cmt">
+                    <span class="av c">鲍</span>
+                    <div class="cmt-body">
+                        <div class="cmt-name">鲍勃 <span class="floor">#2 · 5 小时前</span></div>
+                        <div class="cmt-text">纯表情评论会被放大显示 😄</div>
+                        <div class="cmt-foot"><span>❤ 0</span><span>回复</span></div>
+                    </div>
+                </div>
+            </div>
 
-    </main>
+            <!-- 数据结构 -->
+            <div>
+<pre><span class="c"># blog/models.py</span>
+<span class="k">class</span> <span class="f">Comment</span>(models.Model):
+    post   = models.ForeignKey(Post, related_name=<span class="s">'comments'</span>)
+    author = models.ForeignKey(User)
+    parent = models.ForeignKey(<span class="s">'self'</span>, null=<span class="k">True</span>,   <span class="c"># 直接回复谁</span>
+                              related_name=<span class="s">'replies'</span>)
+    root   = models.ForeignKey(<span class="s">'self'</span>, null=<span class="k">True</span>,   <span class="c"># 属于哪个楼层</span>
+                              related_name=<span class="s">'thread_comments'</span>)
+    depth  = models.PositiveSmallIntegerField(default=<span class="s">0</span>)
+    is_deleted = models.BooleanField(default=<span class="k">False</span>)   <span class="c"># 软删除</span>
 
-    
-    <aside class="side">
-        
+    <span class="k">def</span> <span class="f">save</span>(self, *args, **kwargs):
+        <span class="c"># root / depth 由模型自己维护，视图层不用管</span>
+        <span class="k">if</span> self.parent_id:
+            self.root_id = self.parent.root_id <span class="k">or</span> self.parent_id
+            self.depth = min(self.parent.depth + <span class="s">1</span>, self.MAX_DEPTH)
+        <span class="k">super</span>().save(*args, **kwargs)</pre>
 
+<pre><span class="c"># 楼层树长这样（一次查询取回，零递归；再深也压平到 depth=2）</span>
+楼层 A ── root=None, depth=0
+  ├─ 回复 1 ── root=A, depth=1
+  ├─ 回复 2 ── root=A, depth=1
+  │    └─ 楼中楼 ── root=A, depth=2
+  └─ 回复 3 ── root=A, depth=1</pre>
 
-
-<div class="widget">
-    <div class="widget-body" style="padding: 18px;">
-        <h3 style="font-size: 1rem; margin-bottom: 8px;">👋 欢迎来到我的博客</h3>
-        <p class="text-sm text-3" style="margin-bottom: 14px;">登录后即可点赞、收藏、发表评论，和作者一起交流。</p>
-        <div class="flex gap-10">
-            <a href="login.html" class="btn btn-primary btn-sm" style="flex: 1;">登录</a>
-            <a href="register.html" class="btn btn-outline btn-sm" style="flex: 1;">注册</a>
+                <div class="card" style="margin-top:16px">
+                    <h3>两个关键取舍</h3>
+                    <ul>
+                        <li><b>为什么要 root：</b>只用一个 parent 自关联，渲染时得递归查库，
+                            层数一深就 N+1；有了 root 就能一次 SELECT 取回整棵树，在内存里组装。</li>
+                        <li><b>为什么要软删除：</b>物理删除会让楼层号凭空消失（用户看到 #5 楼没了
+                            会以为出 bug），楼中楼回复也会变成孤儿。软删除只清空内容、保留占位。</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+</section>
 
-
-<div class="widget">
-    <div class="widget-head">📊 站点数据</div>
-    <div class="stat-grid">
-        <div class="stat-box">
-            <div class="v">6</div>
-            <div class="k">篇文章</div>
-        </div>
-        <div class="stat-box">
-            <div class="v">1.5k</div>
-            <div class="k">阅读量</div>
-        </div>
-    </div>
-</div>
-
-
-<div class="widget">
-    <div class="widget-head">🔥 热门文章</div>
-    <div class="widget-body">
-        <ol class="rank-list">
-            
-            <li>
-                <a class="rank-item" href="post/4/index.html">
-                    <span class="rank-no">1</span>
-                    <span style="min-width: 0;">
-                        <span class="rank-title">毕业设计选题到答辩：一个博客系统能讲哪些技术点</span>
-                        <span class="rank-sub">👁 426 · ❤ 2 · 💬 0</span>
-                    </span>
-                </a>
-            </li>
-            
-            <li>
-                <a class="rank-item" href="post/6/index.html">
-                    <span class="rank-no">2</span>
-                    <span style="min-width: 0;">
-                        <span class="rank-title">我的 2026 学习计划：把基础打牢</span>
-                        <span class="rank-sub">👁 367 · ❤ 2 · 💬 0</span>
-                    </span>
-                </a>
-            </li>
-            
-            <li>
-                <a class="rank-item" href="post/2/index.html">
-                    <span class="rank-no">3</span>
-                    <span style="min-width: 0;">
-                        <span class="rank-title">Django ORM 查询优化：把首页从 29 次查询降到 13 次</span>
-                        <span class="rank-sub">👁 287 · ❤ 1 · 💬 0</span>
-                    </span>
-                </a>
-            </li>
-            
-            <li>
-                <a class="rank-item" href="post/5/index.html">
-                    <span class="rank-no">4</span>
-                    <span style="min-width: 0;">
-                        <span class="rank-title">Python 装饰器从入门到在 Django 里用起来</span>
-                        <span class="rank-sub">👁 237 · ❤ 0 · 💬 0</span>
-                    </span>
-                </a>
-            </li>
-            
-            <li>
-                <a class="rank-item" href="post/1/index.html">
-                    <span class="rank-no">5</span>
-                    <span style="min-width: 0;">
-                        <span class="rank-title">Django 评论系统改造：从一级评论到 B 站式楼中楼</span>
-                        <span class="rank-sub">👁 125 · ❤ 2 · 💬 7</span>
-                    </span>
-                </a>
-            </li>
-            
-        </ol>
-    </div>
-</div>
-
-
-
-<div class="widget">
-    <div class="widget-head">
-        <span>🏷️ 热门标签</span>
-        <a href="tags.html" class="more" style="margin-left: auto; font-size: .8rem;">全部 →</a>
-    </div>
-    <div class="widget-body">
-        <div class="tag-cloud">
-            
-                <a class="tag-chip" href="tag-Django.html">Django <span class="n">4</span></a>
-            
-                <a class="tag-chip" href="tag-Python.html">Python <span class="n">4</span></a>
-            
-                <a class="tag-chip" href="tag-毕业设计.html">毕业设计 <span class="n">3</span></a>
-            
-                <a class="tag-chip" href="tag-MySQL.html">MySQL <span class="n">2</span></a>
-            
-                <a class="tag-chip" href="tag-Markdown.html">Markdown <span class="n">1</span></a>
-            
-                <a class="tag-chip" href="tag-前端.html">前端 <span class="n">1</span></a>
-            
+<!-- ============ 处理流程 ============ -->
+<section class="alt" id="flow">
+    <div class="section-inner">
+        <div class="sec-tag">Workflow</div>
+        <h2>一次评论请求的处理流程</h2>
+        <p class="sec-desc">从用户点下「发送」到评论区更新，服务端与前端各自做了什么。</p>
+        <div class="grid grid-3">
+            <div class="card">
+                <span class="ico">①</span>
+                <h3>校验</h3>
+                <p>按顺序校验：内容非空 → 回复目标必须属于同一篇文章 → 15 秒频率限制。
+                    顺序是刻意的，否则非法的 parent_id 会被误报成「发言太快」。</p>
+            </div>
+            <div class="card">
+                <span class="ico">②</span>
+                <h3>落库</h3>
+                <p>保存时由 <code>Comment.save()</code> 自动推导 root 与 depth；
+                    同时按「回复优先通知被回复人，否则通知楼主」生成站内通知，且不给自己发。</p>
+            </div>
+            <div class="card">
+                <span class="ico">③</span>
+                <h3>组装楼层树</h3>
+                <p>一次带 <code>select_related</code> + <code>Prefetch</code> 的查询取回全部评论、
+                    作者资料与点赞，再在内存里按 root 分组、排序、分页。</p>
+            </div>
+            <div class="card">
+                <span class="ico">④</span>
+                <h3>局部渲染</h3>
+                <p>整个评论区是一个独立的局部模板，服务端渲染成 HTML 片段后回给前端，
+                    前端直接替换 <code>#comments</code> 容器内容 —— 全程不刷新页面。</p>
+            </div>
+            <div class="card">
+                <span class="ico">⑤</span>
+                <h3>事件委托</h3>
+                <p>点赞 / 回复 / 删除的监听全部绑在容器上。因为容器内容会被替换，
+                    用 <code>querySelectorAll</code> 绑定的话新出现的按钮会点不动。</p>
+            </div>
+            <div class="card">
+                <span class="ico">⑥</span>
+                <h3>无 JS 兜底</h3>
+                <p>表单本身是标准 <code>form method="post"</code>，
+                    JavaScript 加载失败时依然能正常提交，只是会整页刷新。</p>
+            </div>
         </div>
     </div>
-</div>
+</section>
 
-
-
-<div class="widget">
-    <div class="widget-head">📂 文章分类</div>
-    <div class="widget-body">
-        <ul class="rank-list">
-            
-            <li>
-                <a class="rank-item" href="index.html?category=1" style="align-items: center; padding: 7px 11px;">
-                    <span class="rank-no" style="background: var(--brand-light); color: var(--brand);">1</span>
-                    <span class="rank-title" style="flex: 1;">技术笔记</span>
-                    <span class="badge">3</span>
-                </a>
-            </li>
-            
-            <li>
-                <a class="rank-item" href="index.html?category=3" style="align-items: center; padding: 7px 11px;">
-                    <span class="rank-no" style="background: var(--brand-light); color: var(--brand);">2</span>
-                    <span class="rank-title" style="flex: 1;">学习路线</span>
-                    <span class="badge">1</span>
-                </a>
-            </li>
-            
-            <li>
-                <a class="rank-item" href="index.html?category=4" style="align-items: center; padding: 7px 11px;">
-                    <span class="rank-no" style="background: var(--brand-light); color: var(--brand);">3</span>
-                    <span class="rank-title" style="flex: 1;">生活随笔</span>
-                    <span class="badge">1</span>
-                </a>
-            </li>
-            
-            <li>
-                <a class="rank-item" href="index.html?category=2" style="align-items: center; padding: 7px 11px;">
-                    <span class="rank-no" style="background: var(--brand-light); color: var(--brand);">4</span>
-                    <span class="rank-title" style="flex: 1;">项目实战</span>
-                    <span class="badge">1</span>
-                </a>
-            </li>
-            
-        </ul>
+<!-- ============ 技术栈 ============ -->
+<section id="stack">
+    <div class="section-inner">
+        <div class="sec-tag">Tech Stack</div>
+        <h2>技术栈</h2>
+        <p class="sec-desc">全部为开源方案，没有商业依赖，也不需要前端构建链。</p>
+        <table>
+            <tr><th>用途</th><th>选型</th><th>说明</th></tr>
+            <tr><td>语言 / 框架</td><td>Python 3.9 · Django 4.2 LTS</td><td>服务端渲染为主，少量 AJAX</td></tr>
+            <tr><td>数据库</td><td>MySQL 8 / SQLite</td><td>环境变量切换，迁移完全兼容</td></tr>
+            <tr><td>MySQL 驱动</td><td>PyMySQL</td><td>纯 Python 实现，免编译</td></tr>
+            <tr><td>Markdown 渲染</td><td>Markdown · Pygments</td><td>围栏代码块 + 语法高亮</td></tr>
+            <tr><td>HTML 净化</td><td>bleach · tinycss2</td><td>白名单过滤，防 XSS</td></tr>
+            <tr><td>图片处理</td><td>Pillow</td><td>头像 / 封面 / 评论配图</td></tr>
+            <tr><td>前端</td><td>原生 HTML · CSS · JavaScript</td><td>无框架、无打包、无 CDN 依赖</td></tr>
+            <tr><td>部署预览</td><td>GitHub Pages</td><td>本页与静态快照</td></tr>
+        </table>
     </div>
-</div>
+</section>
 
+<!-- ============ 架构 ============ -->
+<section class="alt" id="arch">
+    <div class="section-inner">
+        <div class="sec-tag">Architecture</div>
+        <h2>系统架构</h2>
+        <p class="sec-desc">典型的 Django MTV 分层，外加一层模板组件化。</p>
+        <div class="grid" style="grid-template-columns:minmax(0,1fr);gap:0">
+            <div class="layer">
+                <h4>表现层 · 浏览器</h4>
+                <div class="role">服务端渲染的 HTML + 一份设计系统 CSS + 一个交互脚本</div>
+                <div class="chips">
+                    <span class="chip">base.html 骨架</span><span class="chip">8 个可复用 partial</span>
+                    <span class="chip">style.css 设计变量</span><span class="chip">深色模式</span>
+                    <span class="chip">AJAX 局部刷新</span><span class="chip">响应式布局</span>
+                </div>
+            </div>
+            <div class="arrow">▼</div>
+            <div class="layer">
+                <h4>业务层 · Django</h4>
+                <div class="role">URL 路由 → 视图 → 表单校验 → 权限判断 → 模板渲染</div>
+                <div class="chips">
+                    <span class="chip">URL 路由</span><span class="chip">视图 View</span>
+                    <span class="chip">表单 Form</span><span class="chip">权限控制</span>
+                    <span class="chip">上下文处理器</span><span class="chip">自定义模板过滤器</span>
+                    <span class="chip">管理命令</span>
+                </div>
+            </div>
+            <div class="arrow">▼</div>
+            <div class="layer">
+                <h4>数据层 · ORM</h4>
+                <div class="role">9 个模型，统计聚合与关联预取都收敛在查询集里</div>
+                <div class="chips">
+                    <span class="chip">Post</span><span class="chip">Comment</span>
+                    <span class="chip">Category</span><span class="chip">Tag</span>
+                    <span class="chip">PostVote</span><span class="chip">Bookmark</span>
+                    <span class="chip">CommentLike</span><span class="chip">Notification</span>
+                    <span class="chip">UserProfile</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-    </aside>
-    
-</div>
+<!-- ============ 工程质量 ============ -->
+<section id="quality">
+    <div class="section-inner">
+        <div class="sec-tag">Quality</div>
+        <h2>工程质量</h2>
+        <p class="sec-desc">
+            功能能跑只是底线，这部分是特意补的：把「性能」和「安全」变成可验证、可回归的指标。
+        </p>
+        <div class="grid grid-2">
+            <div class="card">
+                <span class="ico">🧪</span>
+                <h3>88 个单元测试</h3>
+                <p>覆盖认证权限、文章 CRUD、Markdown 渲染、XSS 过滤、点赞收藏互斥、
+                    <b>评论楼中楼结构</b>、软删除不塌楼、评论权限三档、配图上传拦截、
+                    频率限制、通知生成规则、分页边界等。</p>
+            </div>
+            <div class="card">
+                <span class="ico">📉</span>
+                <h3>查询次数上界（防 N+1）</h3>
+                <p>用 <code>assertNumQueries</code> 把首页和详情页的查询次数钉死：
+                    首页 <b>29 → 13</b> 次，详情页 17 次。
+                    以后谁在模板里写出没预取的访问，测试立刻失败。</p>
+            </div>
+            <div class="card">
+                <span class="ico">🔒</span>
+                <h3>安全细节</h3>
+                <ul>
+                    <li>CSRF：表单 + AJAX 请求头双重携带</li>
+                    <li>XSS：Markdown 渲染后过一遍白名单</li>
+                    <li>开放重定向：登录 next 参数做站内校验</li>
+                    <li>上传：扩展名白名单 + 5MB 上限 + 真伪校验</li>
+                    <li>密码：Django 强度校验 + 加密摘要存储</li>
+                </ul>
+            </div>
+            <div class="card">
+                <span class="ico">🔗</span>
+                <h3>预览站的链接完整性</h3>
+                <p>静态快照生成时会自动把站内绝对路径改写成相对路径，
+                    并自检「每个相对链接是否都能找到文件」。
+                    当前 <b>1600+ 个链接，0 死链</b>。</p>
+            </div>
+        </div>
+    </div>
+</section>
 
+<!-- ============ 快速开始 ============ -->
+<section class="alt" id="start">
+    <div class="section-inner">
+        <div class="sec-tag">Get Started</div>
+        <h2>本地运行</h2>
+        <p class="sec-desc">Windows 下双击脚本即可完成环境准备、建表与数据初始化。</p>
 
-<footer class="footer">
+        <div class="note">
+            <b>关于本页</b>　这是项目展示页，配合
+            <a href="app/index.html">静态快照</a>用于浏览界面。
+            完整的博客功能需要运行 Python 服务（Django 后端 + 数据库），
+            而 GitHub Pages 只能托管静态文件，所以登录、发文、点赞、发评论这些操作在这里不会生效。
+            想体验完整功能请按下面步骤在本地启动。
+        </div>
+
+        <div class="grid grid-2">
+            <div class="card">
+                <h3>① 一键脚本（Windows）</h3>
+<pre>git clone https://github.com/KyoukaAlice/django-inkwell-blog.git
+cd django-inkwell-blog
+
+<span class="c">:: 建虚拟环境 + 装依赖 + 建表 + 生成表情 + 演示数据</span>
+setup_env.bat sqlite demo
+
+<span class="c">:: 启动（sqlite 表示不用装 MySQL）</span>
+start.bat sqlite</pre>
+                <p style="margin-top:12px">浏览器打开 <b>http://127.0.0.1:8000/</b></p>
+            </div>
+            <div class="card">
+                <h3>② 手动命令（macOS / Linux）</h3>
+<pre>python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+python manage.py migrate
+python manage.py generate_emoticons   <span class="c"># 生成表情 SVG</span>
+python manage.py seed_demo            <span class="c"># 演示数据（可选）</span>
+python manage.py runserver</pre>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+            <h3>演示账号</h3>
+            <p>执行 <code>seed_demo</code> 后会创建以下账号，密码统一为 <b>BlogDemo!2026</b>：</p>
+            <table style="margin-top:12px">
+                <tr><th>账号</th><th>说明</th></tr>
+                <tr><td><b>admin</b></td><td>站长，超级管理员，可登录 <code>/admin/</code> 后台</td></tr>
+                <tr><td>alice</td><td>普通用户</td></tr>
+                <tr><td>bob</td><td>普通用户</td></tr>
+            </table>
+        </div>
+    </div>
+</section>
+
+<footer>
     <div class="footer-inner">
         <div>
-            <strong style="color: var(--text-2);">📝 我的博客</strong>
-            <span> · 基于 Django 4.2 构建 · 分享思考与成长</span>
+            <b>📝 DjangoBlog</b><br>
+            基于 Django 的博客系统 · B 站式评论互动 · 毕业设计项目
         </div>
-        <div class="footer-links">
-            <a href="index.html">首页</a>
-            <a href="tags.html">标签</a>
-            <a href="about.html">关于本站</a>
-            
-            <span>&copy; 2026 All rights reserved.</span>
+        <div>
+            <b>技术栈</b><br>
+            Django 4.2 · MySQL / SQLite · Markdown · 原生前端
+        </div>
+        <div>
+            <b>相关链接</b><br>
+            <a href="https://github.com/KyoukaAlice/django-inkwell-blog">GitHub 仓库</a> ·
+            <a href="app/index.html">界面预览</a> ·
+            <a href="#top">返回顶部</a>
         </div>
     </div>
 </footer>
 
-<script>window.DJANGO_BLOG = { notifPollUrl: "/notifications/poll/" };</script>
-<script src="static/js/main.js"></script>
-
+<script>
+    // 主题切换按钮
+    (function () {
+        var btn = document.getElementById('themeBtn');
+        var KEY = 'djangoblog-intro-theme';
+        function paint() {
+            var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            btn.innerHTML = dark
+                ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
+                : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+            btn.title = dark ? '切换到浅色模式' : '切换到深色模式';
+        }
+        btn.addEventListener('click', function () {
+            var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem(KEY, next);
+            paint();
+        });
+        paint();
+    })();
+</script>
 </body>
 </html>
